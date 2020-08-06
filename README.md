@@ -25,19 +25,12 @@ pipenv install
 
 ## Example
 ```python
-import pyvisa as visa
 from Rigol1000z import Rigol1000z
 from time import sleep
 from Rigol1000z.constants import *
 
-# Initialize the visa resource manager
-rm = visa.ResourceManager()
-
-# Get the first visa device connected
-osc_resource = rm.open_resource(rm.list_resources()[0])
-
 # Create oscilloscope interface using with statement!
-with Rigol1000z(osc_resource) as osc:
+with Rigol1000z() as osc:
     osc.ieee488.reset()  # start with known state by restoring default settings
 
     # osc.autoscale()  # Autoscale the scope
@@ -51,14 +44,22 @@ with Rigol1000z(osc_resource) as osc:
         osc[i].enabled = True  # Enable the channel
         osc[i].scale_v = 1000e-3  # Change voltage range of the channel to 1.0V/div.
 
+    osc[2].invert = True  # Invert the channel
+
     osc.run()  # Run the scope if not already
     sleep(0.5)  # Let scope collect the waveform
 
     osc.stop()  # Stop the scope in order to collect data.
 
-    osc.get_screenshot('./screenshot.png')  # Take a screenshot of the scope's display
+    # Take a screenshot of the scope's display
+    osc.get_screenshot('./screenshot.png')
 
-    osc.get_data(EWaveformMode.Raw, './channels.csv')  # Collect and save waveform data from all enabled channels
+    # Collect and save waveform data from all enabled channels
+    tb, data = osc.get_data(
+        channels=(1,),
+        mode=EWaveformMode.Raw,
+        filename='./channels.csv'
+    )
 
     osc.run()  # Move back to run mode when data collection is complete
 ```

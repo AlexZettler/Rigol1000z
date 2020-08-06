@@ -4,10 +4,10 @@ This module contains the definition for the high-level Rigol1000z driver.
 
 import numpy as _np
 import tqdm as _tqdm
-import pyvisa as _visa
+import pyvisa
 from time import sleep
 from Rigol1000z.commands import *
-from typing import List
+from typing import List, Tuple
 
 
 class Rigol1000z(Rigol1000zCommandMenu):
@@ -15,7 +15,20 @@ class Rigol1000z(Rigol1000zCommandMenu):
     The Rigol DS1000z series oscilloscope driver.
     """
 
-    def __init__(self, visa_resource: _visa.Resource):
+    def __init__(self, visa_resource: pyvisa.Resource = None):
+
+        # Load the first resource is:
+        #       * not a resource passed into the constructor
+        #       * only one resource available
+        if visa_resource is None:
+            rm = pyvisa.ResourceManager()  # Initialize the visa resource manager
+            available_resources: Tuple[str] = rm.list_resources()
+
+            assert len(available_resources) == 1
+
+            # Get the first visa device connected
+            visa_resource = rm.open_resource(rm.list_resources()[0])
+
         # Instantiate The scope as a visa command menu
         super().__init__(visa_resource)
 
@@ -196,11 +209,17 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         return raw_img
 
-    def get_data(self, mode=EWaveformMode.Normal, filename=None):
+    def get_data(self,
+                 channels: Tuple[int],
+                 mode=EWaveformMode.Normal,
+                 filename=None) -> Tuple[_np.ndarray, List[_np.ndarray]]:
         """
         Download the captured voltage points from the oscilloscope.
 
         Args:
+            channels (Tuple[int]):
+                ints representing channels to get data from
+
             mode (str): 'norm' if only the points on the screen should be
                 downloaded, and 'raw' if all the points the ADC has captured
                 should be downloaded.  Default is 'norm'.
@@ -213,6 +232,8 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         """
 
+        sleep(0.5)
+
         # Stop scope to capture waveform state
         self.stop()
 
@@ -224,11 +245,14 @@ class Rigol1000z(Rigol1000zCommandMenu):
         self.waveform.read_format = EWaveformReadFormat.Byte
 
         # Create data structures to populate
-        time_series = None
+        info: PreambleContext = self.waveform.data_premable
+        time_series = _np.arange(0, info.points * info.x_increment, info.x_increment)
+
         all_channel_data = []
 
         # Iterate over possible channels
-        for c in range(1, 5):
+        for c in channels:
+            assert 1 <= c <= 5
 
             # Capture the waveform if the channel is enabled
             if self[c].enabled:
@@ -237,9 +261,6 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
                 # retrieve the data preable
                 info: PreambleContext = self.waveform.data_premable
-
-                # Generate the time series for the data
-                time_series = _np.arange(0, info.points * info.x_increment, info.x_increment)
 
                 max_num_pts: int = 250000
                 num_blocks: int = info.points // max_num_pts
@@ -260,7 +281,9 @@ class Rigol1000z(Rigol1000zCommandMenu):
                             break
                     data = self.visa_ask_raw(':wav:data?', 250000)
 
+                    # todo: 10MHz sine wave seems to return one less data than the preamble leads on.
                     data = _np.frombuffer(data[11:-1], 'B')  # Last byte marks the end of the message.
+
                     datas.append(data)
 
                 # Attach each data packet received into a complete data series
