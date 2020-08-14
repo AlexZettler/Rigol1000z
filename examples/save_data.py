@@ -32,7 +32,7 @@ with Rigol1000z(osc_resource) as osc:
     osc.get_screenshot('./screenshot.png')
 
     # Collect and save waveform data from all enabled channels
-    tb, data = osc.get_data(channels=(1,), mode=EWaveformMode.Raw, filename='./channels.csv')
+    tb, data = osc.get_data(channels=(1, 2, 3, 4), mode=EWaveformMode.Raw, filename='./channels.csv')
 
     osc.run()  # Move back to run mode when data collection is complete
 

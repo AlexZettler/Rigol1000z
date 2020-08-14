@@ -7,7 +7,7 @@ import tqdm as _tqdm
 import pyvisa
 from time import sleep
 from Rigol1000z.commands import *
-from typing import List, Tuple
+from typing import List, Tuple, Iterable, Dict
 
 
 class Rigol1000z(Rigol1000zCommandMenu):
@@ -210,32 +210,34 @@ class Rigol1000z(Rigol1000zCommandMenu):
         return raw_img
 
     def get_data(self,
-                 channels: Tuple[int],
-                 mode=EWaveformMode.Normal,
-                 filename=None) -> Tuple[_np.ndarray, List[_np.ndarray]]:
+                 channels: Iterable[int],
+                 mode: str = EWaveformMode.Normal,
+                 filename: str = None,
+                 wait_time_before_read: float = 0.5
+                 ) -> Tuple[_np.ndarray, Dict[any, _np.ndarray]]:
         """
         Download the captured voltage points from the oscilloscope.
 
         Args:
-            channels (Tuple[int]):
+            channels : Iterable[int]
                 ints representing channels to get data from
 
-            mode (str): 'norm' if only the points on the screen should be
+            mode : (str)
+                'norm' if only the points on the screen should be
                 downloaded, and 'raw' if all the points the ADC has captured
                 should be downloaded.  Default is 'norm'.
-            filename (None, str): Filename the data should be saved to.  Default
+            filename : (None, str)
+                Filename the data should be saved to.  Default
                 is `None`; the data is not saved to a file.
 
+            wait_time_before_read : float
+                The amount of time to wait before taking the reading
+
         Returns:
-            2-tuple: A tuple of two lists.  The first list is the time values
-                and the second list is the voltage values.
+            Tuple[_np.ndarray, Dict[_np.ndarray]]
+                The timebase of the values collected, and a dictionary containing the channel data
 
         """
-
-        sleep(0.5)
-
-        # Stop scope to capture waveform state
-        self.stop()
 
         # Set mode
         assert mode in {EWaveformMode.Normal, EWaveformMode.Raw}
@@ -244,55 +246,64 @@ class Rigol1000z(Rigol1000zCommandMenu):
         # Set transmission format
         self.waveform.read_format = EWaveformReadFormat.Byte
 
+        # Stop scope to capture waveform state
+        sleep(wait_time_before_read / 2)
+        self.stop()
+        sleep(wait_time_before_read / 2)
+
         # Create data structures to populate
         info: PreambleContext = self.waveform.data_premable
         time_series = _np.arange(0, info.points * info.x_increment, info.x_increment)
 
-        all_channel_data = []
+        all_channel_data = {}
 
         # Iterate over possible channels
         for c in channels:
             assert 1 <= c <= 5
+            assert self[c].enabled
 
-            # Capture the waveform if the channel is enabled
-            if self[c].enabled:
+            self.waveform.source = self[c].name
 
-                self.waveform.source = self[c].name
+            # retrieve the data preable
+            info: PreambleContext = self.waveform.data_premable
 
-                # retrieve the data preable
-                info: PreambleContext = self.waveform.data_premable
+            max_num_pts: int = 250000
+            num_blocks: int = info.points // max_num_pts
+            last_block_pts: int = info.points % max_num_pts
 
-                max_num_pts: int = 250000
-                num_blocks: int = info.points // max_num_pts
-                last_block_pts: int = info.points % max_num_pts
+            print(f"Block data:\n"
+                  f"    max_num_pts:    {max_num_pts}\n"
+                  f"    num_blocks:     {num_blocks}\n"
+                  f"    last_block_pts: {last_block_pts}\n"
+                  )
 
-                datas = []
-                # print(f"Data being gathered for Ch{}")
-                for i in _tqdm.tqdm(range(num_blocks + 1), ncols=60):
-                    if i < num_blocks:
-                        self.waveform.read_start_point = 1 + i * 250000
-                        self.waveform.read_end_point = 250000 * (i + 1)
+            datas = [[]]
+            # print(f"Data being gathered for Ch{}")
+            for i in _tqdm.tqdm(range(num_blocks + 1), ncols=60):
+                if i < num_blocks:
+                    self.waveform.read_start_point = 1 + i * 250000
+                    self.waveform.read_end_point = 250000 * (i + 1)
+
+                else:
+                    if last_block_pts:
+                        self.waveform.read_start_point = 1 + num_blocks * 250000
+                        self.waveform.read_end_point = num_blocks * 250000 + last_block_pts
+                        # sleep(0.2) # why is this here?
+
                     else:
-                        if last_block_pts:
-                            self.waveform.read_start_point = 1 + num_blocks * 250000
-                            self.waveform.read_end_point = num_blocks * 250000 + last_block_pts
-                            sleep(0.2)
-                        else:
-                            break
-                    data = self.visa_ask_raw(':wav:data?', 250000)
+                        break
+                data = self.visa_ask_raw(':wav:data?', 250000)
 
-                    # todo: 10MHz sine wave seems to return one less data than the preamble leads on.
-                    data = _np.frombuffer(data[11:-1], 'B')  # Last byte marks the end of the message.
+                # todo: 10MHz sine wave seems to return one less data than the preamble indicates.
+                data = _np.frombuffer(data[11:-1], 'B')  # Last byte marks the end of the message.
 
-                    datas.append(data)
+                datas.append(data)
 
-                # Attach each data packet received into a complete data series
-                datas = _np.concatenate(datas)
+            # Attach each data packet received into a complete data series
+            datas = _np.concatenate(datas)
 
-                # Add the data series to the list of data series
-                all_channel_data.append(
-                    (datas - info.y_origin - info.y_reference) * info.y_increment
-                )
+            # Add the data series to the list of data series
+            all_channel_data[c] = (datas - info.y_origin - info.y_reference) * info.y_increment
 
         if filename:
             print(f"writing to: {filename}")
@@ -300,6 +311,11 @@ class Rigol1000z(Rigol1000zCommandMenu):
                 os.remove(filename)
             except OSError:
                 pass
-            _np.savetxt(filename, _np.column_stack((time_series, *all_channel_data)), '%.12e', ', ', '\n')
+            _np.savetxt(
+                filename,
+                _np.column_stack(
+                    (time_series, *(arr for ch, arr in all_channel_data.items()))
+                ), '%.12e', ', ', '\n'
+            )
 
         return time_series, all_channel_data
