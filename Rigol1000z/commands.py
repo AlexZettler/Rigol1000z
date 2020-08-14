@@ -8,7 +8,8 @@ import tqdm as _tqdm
 import pyvisa as _visa
 from Rigol1000z.rigol1000zcommandmenu import Rigol1000zCommandMenu
 from Rigol1000z.constants import *
-from typing import List, Union, Iterable
+from typing import List, Union, Iterable, Set
+import itertools
 
 
 class Channel(Rigol1000zCommandMenu):
@@ -502,6 +503,14 @@ class EventTable(Rigol1000zCommandMenu):
 # incomplete
 class Function(Rigol1000zCommandMenu):
     cmd_hierarchy_str = ":func"
+
+    @property
+    def beep_on_record(self) -> bool:
+        return self.visa_ask(f":WREC:PROM?") == "1"
+
+    @beep_on_record.setter
+    def beep_on_record(self, val: bool):
+        self.visa_write(f":WREC:PROM {'1' if val else '0'}")
 
 
 class IEEE488(Rigol1000zCommandMenu):
@@ -2362,6 +2371,14 @@ class Storage(Rigol1000zCommandMenu):
 class System(Rigol1000zCommandMenu):
     cmd_hierarchy_str = ":syst"
 
+    @property
+    def beep_enabled(self) -> bool:
+        return self.visa_ask(f":BEEP?") == "1"
+
+    @beep_enabled.setter
+    def beep_enabled(self, val: bool):
+        self.visa_write(f":BEEP {'1' if val else '0'}")
+
 
 # incomplete
 class Trace(Rigol1000zCommandMenu):
@@ -2420,6 +2437,20 @@ class Timebase(Rigol1000zCommandMenu):
         self.delay = TimebaseDelay(visa_resource)
 
     @property
+    def scale_options(self) -> Set[float]:
+        """
+        YT mode:  5ns/div to 50s/div in 1-2-5 step
+
+        Roll mode(not supported here): 200ms/div to 50s/div in   1-2-5 ste
+
+        :return:
+        """
+        return {
+            5 * 10 ** -9,  # Minimum value does not span magnitude order
+            *{v[0] * 10 ** v[1] for v in itertools.product({1, 2, 5}, range(-8, 1, 1))}
+        }
+
+    @property
     def scale(self):
         """
         Query the main timebase scale. The default unit is s/div.
@@ -2435,7 +2466,7 @@ class Timebase(Rigol1000zCommandMenu):
         :param val:
         :return:
         """
-        assert 50e-9 <= val <= 50
+        assert 4.99e-9 <= val <= 50.01
         self.visa_write(f':scal {val:.4e}')
 
     @property
@@ -2460,15 +2491,15 @@ class Timebase(Rigol1000zCommandMenu):
         self.visa_write(f':mode {val}')
 
     @property
-    def offset(self):
+    def offset(self) -> float:
         """
         Query the main timebase offset. The default unit is s.
         :return:
         """
-        return self.visa_ask(':offs?')
+        return float(self.visa_ask(':offs?'))
 
     @offset.setter
-    def offset(self, val):
+    def offset(self, val: float):
         """
         Set the main timebase offset. The default unit is s.
         :param val:
@@ -2482,11 +2513,11 @@ class TriggerEdge(Rigol1000zCommandMenu):
     cmd_hierarchy_str = ":trig:edg"
 
     @property
-    def trigger_level_v(self):
-        return self.visa_ask(':lev?')
+    def trigger_level_v(self) -> float:
+        return float(self.visa_ask(':lev?'))
 
     @trigger_level_v.setter
-    def trigger_level_v(self, level):
+    def trigger_level_v(self, level: float):
         self.visa_write(f':lev {level:.3e}')
 
 
@@ -2499,13 +2530,12 @@ class Trigger(Rigol1000zCommandMenu):
         self.edge = TriggerEdge(visa_resource)
 
     @property
-    def trigger_holdoff_s(self):
-        return self.visa_ask(':hold?')
+    def trigger_holdoff_s(self) -> float:
+        return float(self.visa_ask(':hold?'))
 
     @trigger_holdoff_s.setter
-    def trigger_holdoff_s(self, holdoff):
-        self.visa_write(':hold %.3e' % holdoff)
-        return self.get_trigger_holdoff_s()
+    def trigger_holdoff_s(self, holdoff: float):
+        self.visa_write(f":hold {holdoff:.3e}")
 
 
 class PreambleContext:
