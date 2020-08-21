@@ -2,12 +2,19 @@
 This module contains the definition for the high-level Rigol1000z driver.
 """
 
-import numpy as _np
-import tqdm as _tqdm
-import pyvisa
+# standard libraries
+from typing import List, Tuple, Dict
+from datetime import datetime
 from time import sleep
+
+# pip libraries
+import numpy as _np  # type: ignore
+import pyvisa  # type: ignore
+
+# packages from this library
 from Rigol1000z.commands import *
-from typing import List, Tuple, Iterable, Dict
+from Rigol1000z.sql_integration.sql_commands import db
+from Rigol1000z.waveform_objs import Capture, WaveformWithContext
 
 
 class Rigol1000z(Rigol1000zCommandMenu):
@@ -209,35 +216,33 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         return raw_img
 
-    def get_data(self,
-                 channels: Iterable[int],
-                 mode: str = EWaveformMode.Normal,
-                 filename: str = None,
-                 wait_time_before_read: float = 0.5
-                 ) -> Tuple[_np.ndarray, Dict[any, _np.ndarray]]:
-        """
-        Download the captured voltage points from the oscilloscope.
+    # def get_data(self,
+    #             channels: Iterable[int],
+    #             mode: str = EWaveformMode.Normal,
+    #             filename: str = None,
+    #             wait_time_before_read: float = 0.5
+    #             ) -> Tuple[_np.ndarray, Dict[any, _np.ndarray]]:
+    #
+    #    ch_dict = self.get_waveform_bytes_with_context(channels, mode)
+    #
+    #    if filename:
+    #        print(f"writing to: {filename}")
+    #        try:
+    #            os.remove(filename)
+    #        except OSError:
+    #            pass
+    #        _np.savetxt(
+    #            filename,
+    #            _np.column_stack(
+    #                (time_series, *(arr for ch, arr in all_channel_data.items()))
+    #            ), '%.12e', ', ', '\n'
+    #        )
+    #
+    #    return time_series, all_channel_data
 
-        Args:
-            channels : Iterable[int]
-                ints representing channels to get data from
-
-            mode : (str)
-                'norm' if only the points on the screen should be
-                downloaded, and 'raw' if all the points the ADC has captured
-                should be downloaded.  Default is 'norm'.
-            filename : (None, str)
-                Filename the data should be saved to.  Default
-                is `None`; the data is not saved to a file.
-
-            wait_time_before_read : float
-                The amount of time to wait before taking the reading
-
-        Returns:
-            Tuple[_np.ndarray, Dict[_np.ndarray]]
-                The timebase of the values collected, and a dictionary containing the channel data
-
-        """
+    def get_capture(
+            self, mode: str = EWaveformMode.Normal,
+    ) -> Capture:
 
         # Set mode
         assert mode in {EWaveformMode.Normal, EWaveformMode.Raw}
@@ -245,77 +250,86 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         # Set transmission format
         self.waveform.read_format = EWaveformReadFormat.Byte
+        print(self.waveform.read_format)
+
+        # todo: wait until data is ready with the new settings
 
         # Stop scope to capture waveform state
+        wait_time_before_read = 3.0
         sleep(wait_time_before_read / 2)
         self.stop()
         sleep(wait_time_before_read / 2)
 
-        # Create data structures to populate
-        info: PreambleContext = self.waveform.data_premable
-        time_series = _np.arange(0, info.points * info.x_increment, info.x_increment)
+        # Get general info about the waveform from the preamble
+        info_initial: PreambleContext = self.waveform.data_premable
+        total_wf_period: float = float(info_initial.points * info_initial.x_increment)
+        del info_initial
 
-        all_channel_data = {}
+        # Create dictionary to populate channel data with
+        capture = Capture(total_wf_period)
 
         # Iterate over possible channels
-        for c in channels:
-            assert 1 <= c <= 5
-            assert self[c].enabled
+        for c in [n.channel for n in self.channel_list]:
 
-            self.waveform.source = self[c].name
+            if self[c].enabled:
 
-            # retrieve the data preable
-            info: PreambleContext = self.waveform.data_premable
+                self.waveform.source = self[c].name
 
-            max_num_pts: int = 250000
-            num_blocks: int = info.points // max_num_pts
-            last_block_pts: int = info.points % max_num_pts
+                # retrieve the data preable
+                info: PreambleContext = self.waveform.data_premable
 
-            print(f"Block data:\n"
-                  f"    max_num_pts:    {max_num_pts}\n"
-                  f"    num_blocks:     {num_blocks}\n"
-                  f"    last_block_pts: {last_block_pts}\n"
-                  )
+                max_num_pts: int = 250000
+                num_blocks: int = info.points // max_num_pts
+                last_block_pts: int = info.points % max_num_pts
 
-            datas = [[]]
-            # print(f"Data being gathered for Ch{}")
-            for i in _tqdm.tqdm(range(num_blocks + 1), ncols=60):
-                if i < num_blocks:
-                    self.waveform.read_start_point = 1 + i * 250000
-                    self.waveform.read_end_point = 250000 * (i + 1)
+                print(f"Data being gathered for Ch{c}")
+                print(
+                    f"Block data:\n"
+                    f"    max_num_pts:    {max_num_pts}\n"
+                    f"    num_blocks:     {num_blocks}\n"
+                    f"    last_block_pts: {last_block_pts}\n"
+                )
 
-                else:
-                    if last_block_pts:
-                        self.waveform.read_start_point = 1 + num_blocks * 250000
-                        self.waveform.read_end_point = num_blocks * 250000 + last_block_pts
-                        # sleep(0.2) # why is this here?
+                data_blocks: List[_np.ndarray] = []
+
+                for i in range(num_blocks + 1):
+                    if i < num_blocks:
+                        self.waveform.read_start_point = 1 + i * 250000
+                        self.waveform.read_end_point = 250000 * (i + 1)
 
                     else:
-                        break
-                data = self.visa_ask_raw(':wav:data?', 250000)
+                        if last_block_pts:
+                            self.waveform.read_start_point = 1 + num_blocks * 250000
+                            self.waveform.read_end_point = num_blocks * 250000 + last_block_pts
 
-                # todo: 10MHz sine wave seems to return one less data than the preamble indicates.
-                data = _np.frombuffer(data[11:-1], 'B')  # Last byte marks the end of the message.
+                        else:
+                            break
+                    data = self.visa_ask_raw(':wav:data?', 250000)
 
-                datas.append(data)
+                    print(f"RAW DATA RETURNED FROM SCOPE TYPE: {type(data)}")
 
-            # Attach each data packet received into a complete data series
-            datas = _np.concatenate(datas)
+                    # todo: 10MHz sine wave seems to return one less data point than the preamble indicates.
+                    #  I believe this has to do with data that is only one block long not containing an end character.
+                    #  further testing needed.
+                    data = _np.frombuffer(data[11:-1], "B")  # Last byte marks the end of the message.
 
-            # Add the data series to the list of data series
-            all_channel_data[c] = (datas - info.y_origin - info.y_reference) * info.y_increment
+                    data_blocks.append(data)
 
-        if filename:
-            print(f"writing to: {filename}")
-            try:
-                os.remove(filename)
-            except OSError:
-                pass
-            _np.savetxt(
-                filename,
-                _np.column_stack(
-                    (time_series, *(arr for ch, arr in all_channel_data.items()))
-                ), '%.12e', ', ', '\n'
-            )
+                y_offset = -info.y_origin - info.y_reference
 
-        return time_series, all_channel_data
+                if len(data_blocks) == 1:
+                    data_array = data_blocks[0]
+                else:
+                    data_array = _np.concatenate(data_blocks, axis=None)
+
+                capture.add_waveform(
+                    str(c),
+                    WaveformWithContext(
+                        channel_name=str(c),
+                        data=data_array,
+                        vertical_offset=y_offset,
+                        vertical_scale=info.y_increment
+                    )
+                )
+
+        return capture

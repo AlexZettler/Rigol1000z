@@ -2,6 +2,8 @@
 This module contains definitions for string constants used to communicate with Rigol100z series oscilloscopes.
 """
 
+from typing import Set
+
 
 class ScopeModel:
     DS1104Z_S_Plus = "DS1104Z-S Plus"
@@ -13,144 +15,144 @@ class ScopeModel:
 
 
 class EAcquireMode:
-    Normal = "NORM"
-    Averages = "AVER"
-    Peak = "PEAK"
-    HighResolution = "HRES"
+    Normal: str = "NORM"
+    Averages: str = "AVER"
+    Peak: str = "PEAK"
+    HighResolution: str = "HRES"
 
 
 class EDisplayMode:
-    Vectors = "VEC"
-    Dots = "DOTS"
+    Vectors: str = "VEC"
+    Dots: str = "DOTS"
 
 
 class EDisplayGrid:
-    Full = "FULL"
-    Half = "HALF"
-    NoGrid = "NONE"
+    Full: str = "FULL"
+    Half: str = "HALF"
+    NoGrid: str = "NONE"
 
 
 class EEventtableFormat:
-    Hex = "HEX"
-    Ascii = "ASC"
-    Decimal = "DEC"
+    Hex: str = "HEX"
+    Ascii: str = "ASC"
+    Decimal: str = "DEC"
 
 
 class EEventtableViewFormat:
-    Package = "PACK"
-    Detail = "DET"
-    Payload = "PAYL"
+    Package: str = "PACK"
+    Detail: str = "DET"
+    Payload: str = "PAYL"
 
 
 class EEventtableColumn:
-    Data = "DATA"
-    Tx = "TX"
-    Rx = "RX"
-    MISO = "MISO"
-    MOSI = "MOSI"
+    Data: str = "DATA"
+    Tx: str = "TX"
+    Rx: str = "RX"
+    MISO: str = "MISO"
+    MOSI: str = "MOSI"
 
 
 class EMeasureStatisticMode:
-    Difference = "DIFF"
-    Extremum = "EXTR"
+    Difference: str = "DIFF"
+    Extremum: str = "EXTR"
 
 
 class EMeasureItem:
-    VoltageMax = "VMAX"
-    VoltageMin = "VMIN"
-    VoltagePeakToPeak = "VPP"
-    VoltageTop = "VTOP"
-    VoltageBase = "VBASe"
-    VoltageAmplitude = "VAMP"
+    VoltageMax: str = "VMAX"
+    VoltageMin: str = "VMIN"
+    VoltagePeakToPeak: str = "VPP"
+    VoltageTop: str = "VTOP"
+    VoltageBase: str = "VBASe"
+    VoltageAmplitude: str = "VAMP"
 
-    VoltageUpper = "VUP"
-    VoltageMid = "VMID"
-    VoltageLower = "VLOW"
-    VoltageAverage = "VAVG"
+    VoltageUpper: str = "VUP"
+    VoltageMid: str = "VMID"
+    VoltageLower: str = "VLOW"
+    VoltageAverage: str = "VAVG"
 
-    VoltageRMS = "VRMS"
-    VRmsPeriod = "PVRMS"
+    VoltageRMS: str = "VRMS"
+    VRmsPeriod: str = "PVRMS"
 
-    VoltageOvershoot = "OVER"
-    VoltagePreshoot = "PRES"
+    VoltageOvershoot: str = "OVER"
+    VoltagePreshoot: str = "PRES"
 
-    Area = "MAR"
-    AreaPeriod = "MPAR"
+    Area: str = "MAR"
+    AreaPeriod: str = "MPAR"
 
-    Period = "PER"
+    Period: str = "PER"
 
-    Frequency = "FREQ"
+    Frequency: str = "FREQ"
 
-    RiseTime = "RTIM"
-    FallTime = "FTIM"
+    RiseTime: str = "RTIM"
+    FallTime: str = "FTIM"
 
-    WidthPositive = "PWID"
-    WidthNegative = "NWID"
+    WidthPositive: str = "PWID"
+    WidthNegative: str = "NWID"
 
-    DutyPositive = "PDUT"
-    DutyNegative = "NDUT"
+    DutyPositive: str = "PDUT"
+    DutyNegative: str = "NDUT"
 
-    DelayRise = "RDEL"
-    DelayFall = "FDEL"
+    DelayRise: str = "RDEL"
+    DelayFall: str = "FDEL"
 
-    PhaseRise = "RPH"
-    PhaseFall = "FPH"
+    PhaseRise: str = "RPH"
+    PhaseFall: str = "FPH"
 
-    TVMax = "TVMAX"  # time to voltage max?
-    TVMin = "TVMIN"  # time to voltage min?
+    TVMax: str = "TVMAX"  # time to voltage max?
+    TVMin: str = "TVMIN"  # time to voltage min?
 
-    SlewRatePositive = "PSLEW"
-    SlewRateNegative = "NSLEW"
+    SlewRatePositive: str = "PSLEW"
+    SlewRateNegative: str = "NSLEW"
 
-    Variance = "VARI"
+    Variance: str = "VARI"
 
-    PulsesPositive = "PPUL"
-    PulsesNegative = "NPUL"
-    EdgesPositive = "PEDG"
-    EdgesNegative = "NEDG"
+    PulsesPositive: str = "PPUL"
+    PulsesNegative: str = "NPUL"
+    EdgesPositive: str = "PEDG"
+    EdgesNegative: str = "NEDG"
 
 
 class EMeasurementStatisticItemType:
-    Maximum = "MAX"
-    Minimum = "MIN"
-    Current = "CURR"
-    Average = "AVER"
-    Deviation = "DEV"
+    Maximum: str = "MAX"
+    Minimum: str = "MIN"
+    Current: str = "CURR"
+    Average: str = "AVER"
+    Deviation: str = "DEV"
 
 
 class ETimebaseMode:
-    Main = 'main'
-    XY = 'xy'
-    Roll = 'roll'
+    Main: str = 'main'
+    XY: str = 'xy'
+    Roll: str = 'roll'
 
 
 class ESource:
-    D0 = "D0"
-    D1 = "D1"
-    D2 = "D2"
-    D3 = "D3"
-    D4 = "D4"
-    D5 = "D5"
-    D6 = "D6"
-    D7 = "D7"
-    D8 = "D8"
-    D9 = "D9"
-    D10 = "D10"
-    D11 = "D11"
-    D12 = "D12"
-    D13 = "D13"
-    D14 = "D14"
-    D15 = "D15"
+    D0: str = "D0"
+    D1: str = "D1"
+    D2: str = "D2"
+    D3: str = "D3"
+    D4: str = "D4"
+    D5: str = "D5"
+    D6: str = "D6"
+    D7: str = "D7"
+    D8: str = "D8"
+    D9: str = "D9"
+    D10: str = "D10"
+    D11: str = "D11"
+    D12: str = "D12"
+    D13: str = "D13"
+    D14: str = "D14"
+    D15: str = "D15"
 
-    Ch1 = "CHAN1"
-    Ch2 = "CHAN2"
-    Ch3 = "CHAN3"
-    Ch4 = "CHAN4"
+    Ch1: str = "CHAN1"
+    Ch2: str = "CHAN2"
+    Ch3: str = "CHAN3"
+    Ch4: str = "CHAN4"
 
-    Math = "MATH"
+    Math: str = "MATH"
 
 
-sources_digital = {
+sources_digital: Set[str] = {
     ESource.D0,
     ESource.D1,
     ESource.D2,
@@ -169,29 +171,29 @@ sources_digital = {
     ESource.D15,
 }
 
-sources_analog = {
+sources_analog: Set[str] = {
     ESource.Ch1,
     ESource.Ch2,
     ESource.Ch3,
     ESource.Ch4,
 }
 
-sources_math = {"MATH"}
+sources_math: Set[str] = {"MATH"}
 
 
 class EWaveformMode:
-    Normal = "NORM"
-    Max = "MAX"
-    Raw = "RAW"
+    Normal: str = "NORM"
+    Max: str = "MAX"
+    Raw: str = "RAW"
 
 
-waveform_modes = {EWaveformMode.Normal, EWaveformMode.Max, EWaveformMode.Raw}
+waveform_modes: Set[str] = {EWaveformMode.Normal, EWaveformMode.Max, EWaveformMode.Raw}
 
 
 class EWaveformReadFormat:
-    Word = "WORD"
-    Byte = "BYTE"
-    Ascii = "ASC"
+    Word: str = "WORD"
+    Byte: str = "BYTE"
+    Ascii: str = "ASC"
 
 
-waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWaveformReadFormat.Ascii}
+waveform_read_formats: Set[str] = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWaveformReadFormat.Ascii}

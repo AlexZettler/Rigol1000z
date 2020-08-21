@@ -3,13 +3,14 @@ This module contains definitions for command menus of the Rigol1000z series of o
 """
 
 import os
-import numpy as _np
-import tqdm as _tqdm
-import pyvisa as _visa
+import numpy as _np  # type: ignore
+import tqdm as _tqdm  # type: ignore
+import pyvisa as _visa  # type: ignore
 from Rigol1000z.rigol1000zcommandmenu import Rigol1000zCommandMenu
 from Rigol1000z.constants import *
-from typing import List, Union, Iterable, Set
+from typing import List, Union, Iterable, Set, Tuple, Dict, Optional
 import itertools
+from decimal import Decimal, Context
 
 
 class Channel(Rigol1000zCommandMenu):
@@ -218,17 +219,17 @@ class Acquire(Rigol1000zCommandMenu):
 
         num_enabled_chans = sum(1 if c.enabled else 0 for c in self._linked_channels)
 
-        val = int(val) if val != -1 else 'AUTO'
+        str_val: str = str(val) if val != -1 else 'AUTO'
 
         if num_enabled_chans == 1:
-            assert val in ('AUTO', 12000, 120000, 1200000, 12000000, 24000000)
+            assert str_val in ('AUTO', 12000, 120000, 1200000, 12000000, 24000000)
         elif num_enabled_chans == 2:
-            assert val in ('AUTO', 6000, 60000, 600000, 6000000, 12000000)
+            assert str_val in ('AUTO', 6000, 60000, 600000, 6000000, 12000000)
         elif num_enabled_chans in (3, 4):
-            assert val in ('AUTO', 3000, 30000, 300000, 3000000, 6000000)
+            assert str_val in ('AUTO', 3000, 30000, 300000, 3000000, 6000000)
 
         # todo: set to run mode if required
-        self.visa_write(f':mdep {val}')
+        self.visa_write(f':mdep {str_val}')
 
     @property
     def mode(self):
@@ -465,7 +466,7 @@ class EventTable(Rigol1000zCommandMenu):
         :return:
         """
 
-        return self.visa_ask(':row?')
+        return int(self.visa_ask(':row?'))
 
     @row.setter
     def row(self, val: int):
@@ -495,7 +496,7 @@ class EventTable(Rigol1000zCommandMenu):
         """
         self.visa_write(f':sort {"DESC" if val else "ASC"}')
 
-    def get_data(self) -> any:
+    def get_data(self):
         # todo: test and expand this when I have test data to work with
         return self.visa_ask(':data?')
 
@@ -689,7 +690,7 @@ class MeasureSetup(Rigol1000zCommandMenu):
 
         :return:
         """
-        return float(round(self.visa_ask(f':max?'))) / 100.0
+        return float(self.visa_ask(f':max?')) / 100.0
 
     @max.setter
     def max(self, val: float):
@@ -710,7 +711,7 @@ class MeasureSetup(Rigol1000zCommandMenu):
 
         :return:
         """
-        return float(round(self.visa_ask(f':mid?'))) / 100.0
+        return float(self.visa_ask(f':mid?')) / 100.0
 
     @max.setter
     def mid(self, val: float):
@@ -731,7 +732,7 @@ class MeasureSetup(Rigol1000zCommandMenu):
 
         :return:
         """
-        return float(round(self.visa_ask(f':mid?'))) / 100.0
+        return float(self.visa_ask(f':mid?')) / 100.0
 
     @max.setter
     def min(self, val: float):
@@ -1529,9 +1530,9 @@ class MeasurementStatisticItem(Rigol1000zCommandMenu):
 class MeasurementStatistic(Rigol1000zCommandMenu):
     cmd_hierarchy_str = ":meas:stat"
 
-    def __init__(self, visa_resource: _visa.Resource, idn: str):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str]):
         super().__init__(visa_resource, idn)
-        self.item = MeasurementStatisticItem(visa_resource, idn)
+        self.item: MeasurementStatisticItem = MeasurementStatisticItem(visa_resource, idn)
 
     @property
     def enabled(self) -> bool:
@@ -1587,10 +1588,6 @@ class MeasurementStatistic(Rigol1000zCommandMenu):
         :return:
         """
         self.visa_write(':res')
-
-    def item(self):
-        pass
-        # todo: what the fuck is item (pg 145)
 
 
 class MeasurementItem(Rigol1000zCommandMenu):
@@ -2240,7 +2237,7 @@ class Measure(Rigol1000zCommandMenu):
     """
     cmd_hierarchy_str = ":meas"
 
-    def __init__(self, visa_resource: _visa.Resource, idn: str = None):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str] = ""):
         super().__init__(visa_resource, idn)
 
         self.counter = MeasureCounter(visa_resource, idn)
@@ -2544,18 +2541,29 @@ class PreambleContext:
     """
 
     def __init__(self, preamble_str):
+        print(f"preamble_str: {preamble_str}")
+
         pre = preamble_str.split(',')
 
+        # Meta params
         self.format: int = int(pre[0])
         self.type: int = int(pre[1])
+
+        # Length Params
         self.points: int = int(pre[2])
         self.count: int = int(pre[3])
-        self.x_increment: float = float(pre[4])
+
+        # X params
+        self.x_increment: Decimal = Decimal(pre[4])  # Capture this as a decimal to store more significant digits
         self.x_origin: float = float(pre[5])
-        self.x_reference: float = float(pre[6])
-        self.y_increment: float = float(pre[7])
-        self.y_origin: float = float(pre[8])
-        self.y_reference: float = float(pre[9])
+        self.x_reference: int = int(pre[6])
+        assert self.x_reference == 0  # Should always return 0
+
+        # Y params
+        self.y_increment: str = str(pre[7])  # This should be stored as a string and read as a decimal
+        self.y_origin: int = int(pre[8])
+        self.y_reference: int = int(pre[9])
+        # assert self.y_reference == 127  # Should always return 0
 
 
 class Waveform(Rigol1000zCommandMenu):
@@ -2612,7 +2620,7 @@ class Waveform(Rigol1000zCommandMenu):
         return float(self.visa_ask(':xinc?'))
 
     @property
-    def y_increment(self) -> float:
+    def y_increment(self) -> Decimal:
         """
         Query the waveform increment of the specified channel source in the Y direction.
         The unit is the same as the current amplitude unit.
@@ -2635,7 +2643,7 @@ class Waveform(Rigol1000zCommandMenu):
 
         :return:
         """
-        return float(self.visa_ask(':yinc?'))
+        return Decimal(self.visa_ask(':yinc?'))
 
     @property
     def x_origin(self) -> float:
@@ -2743,6 +2751,3 @@ class Waveform(Rigol1000zCommandMenu):
         """
         raw_pre = self.visa_ask(':pre?')
         return PreambleContext(raw_pre)
-
-    # todo: review get is data handled directly from the Rigol class.
-    #  Make sure this makes sense because this violates the pattern taken by the rest of the menus

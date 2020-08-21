@@ -1,13 +1,9 @@
-import pyvisa as visa
 from Rigol1000z import Rigol1000z
 from time import sleep
 from Rigol1000z.constants import *
 
-rm = visa.ResourceManager()  # Initialize the visa resource manager
-osc_resource = rm.open_resource(rm.list_resources()[0])  # Get the first visa device connected
-
 # Create oscilloscope interface using with statement!
-with Rigol1000z(osc_resource) as osc:
+with Rigol1000z() as osc:
     osc.ieee488.reset()  # start with known state by restoring default settings
 
     # osc.autoscale()  # Autoscale the scope
@@ -32,8 +28,11 @@ with Rigol1000z(osc_resource) as osc:
     osc.get_screenshot('./screenshot.png')
 
     # Collect and save waveform data from all enabled channels
-    tb, data = osc.get_data(channels=(1, 2, 3, 4), mode=EWaveformMode.Raw, filename='./channels.csv')
+    capture = osc.get_capture(mode=EWaveformMode.Raw)
+
+    capture.view_graph_plotly()
 
     osc.run()  # Move back to run mode when data collection is complete
+    sleep(2.0)
 
 print("done")

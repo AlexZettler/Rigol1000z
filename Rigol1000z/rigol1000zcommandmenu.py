@@ -2,8 +2,9 @@
 This module contains menu hierarchy abstractions.
 """
 
-import pyvisa as _visa
+import pyvisa as _visa  # type: ignore
 from Rigol1000z.constants import *
+from typing import Optional, Union
 
 
 class CommandMenu:
@@ -20,16 +21,17 @@ class CommandMenu:
     def __init__(self, visa_resource: _visa.Resource):
         self.visa_resource: _visa.Resource = visa_resource
 
-    def visa_write(self, cmd: str):
+    def visa_write(self, cmd: str) -> None:
         self.visa_resource.write(self.cmd_hierarchy_str + cmd)
+        return None
 
     def visa_read(self) -> str:
         return self.visa_resource.read().strip()
 
-    def visa_read_raw(self, num_bytes: int = -1):
+    def visa_read_raw(self, num_bytes: int = -1) -> bytes:
         return self.visa_resource.read_raw(num_bytes)
 
-    def visa_ask(self, cmd: str):
+    def visa_ask(self, cmd: str) -> str:
         return self.visa_resource.query(self.cmd_hierarchy_str + cmd)
 
     def visa_ask_raw(self, cmd: str, num_bytes: int = -1):
@@ -42,15 +44,15 @@ class Rigol1000zCommandMenu(CommandMenu):
     Adds additional checks and features exclusive to the Rigol1000z series of scopes
     """
 
-    def __init__(self, visa_resource, idn: str = None):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str] = ""):
         super().__init__(visa_resource)
 
-        if (idn is not None) and (type(idn) is str):
-            self._idn_cache: str = idn
-
+        # Cache the device's identifier
+        self._idn_cache: str
+        if (idn != "") and (type(idn) is str):
+            self._idn_cache = str(idn)
         else:
-            # Cache the device's identifier
-            self._idn_cache: str = self.visa_resource.query("*IDN?")
+            self._idn_cache = str(self.visa_resource.query("*IDN?"))
 
     @property
     def osc_model(self) -> str:
