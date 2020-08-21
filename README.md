@@ -1,7 +1,12 @@
 # Rigol1000z
 Python library to interface with Rigol DS1000z series oscilloscopes.
 
-The interface uses the VISA communication protocol implemented in (PyVISA) and supports both USB and Ethernet.
+## Features
+* Capture and Waveform objects
+    * Builtin graphing function
+    * SQLite database writing/reading for use in testing that requires a large number of waveforms to be captured
+* 
+* Uses the VISA communication protocol implemented in (PyVISA) and supports both USB and Ethernet.
 
 ## Platforms
 * Windows 10 - Tested
@@ -63,17 +68,22 @@ with Rigol1000z() as osc:
 
     osc.run()  # Move back to run mode when data collection is complete
 ```
-
-## Acknowledgements
-Based on the original work by [@jtambasco](https://github.com/jtambasco/RigolOscilloscope) which was further developed by [@jeanyvesb9](https://github.com/jeanyvesb9/Rigol1000z).
-
-I have heavily modified the work to be closer to a full implementation of a Rigol1000z library.
-
-My goal for the rewrite has been to make the device as easy as possible to control by:
-* Type hinting function parameters, and return values.
-* Developing a command hierarchy as it is found in the Rigol programming manual and adding docstrings describing the effect of the function.
-* Implementing most set/get commands as properties and related setters for a more organic device interface.
-* Defining discrete string constants separately so that autocompletion of constants can be preformed from the corresponding enumeration class
+## Code standards
+To ensure the quality of the codebase I have been adhering to a few general rules:
+* Pep8 is to be followed.
+* All function parameters and return values should be typed as proposed through [pep484](https://www.python.org/dev/peps/pep-0484/) and [pep484](https://www.python.org/dev/peps/pep-0484/):
+    * This has a number of benefits:
+        * Allows editors to provide correct attribute auto-completion
+        * Ensures predictable behavior from functions that are passed values
+    * This is ensured through the following:
+        * MyPy is used to check type adherence.
+        * Tests ensure that types are of correct values when functions from external libraries without typing are called.
+   
+* Tests are good things to have to ensure that the system behaves as intended.
+    * Tests are currently lacking but will be implemented in the future.
+* Documentation is key and allows users to use this code quickly and efficiently.
+    * [PyDoc3](https://github.com/pdoc3/pdoc) is used to generate HTML API documentation
+    * Documentation should adhere to the [google style](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) to minimize documentation overhead and allow for PyDoc parsing.
 
 ## Feedback/Contributing
 I began this project to create the best library to control the Rigol1000z series of scopes.
@@ -84,7 +94,17 @@ with the oscilloscope model you are using, and code you were running.
 
 Feedback will keep this project growing and I encourage all suggestions.
 
-## Contributing
-There are menus that aren't yet implemented completely. If you would like to implement one of these menus feel free to submit a pull request.
+## Acknowledgements
+Based on the original work by [@jtambasco](https://github.com/jtambasco/RigolOscilloscope) which was further developed by [@jeanyvesb9](https://github.com/jeanyvesb9/Rigol1000z).
 
-If you are having an issue and want to fix it, please create the issue first with the model and code so that problems are addressed and tracked properly :)
+Although a fork, the entire has been rewritten with the exception to the name of the Rigol1000z class name and logic responsible for retrieving waveform data.
+I have heavily modified the work to be closer to a full implementation of a Rigol1000z library.
+
+My goal for the rewrite has been to make the device as easy as possible to control by:
+* Type hinting function parameters, and return values.
+* Developing a command hierarchy as it is found in the [Rigol programming manual](https://www.rtelecom.net/userfiles/product_files_shared/Rigol/Oscilloscopes/MSO1000Z/DS1000Z_Programming%20Guide_EN.pdf) and adding docstrings describing the effect of the function.
+* Implementing most set/get commands as properties and related setters for a more organic device interface.
+* Defining discrete string constants separately so that autocompletion of constants can be preformed from the corresponding enumeration class
+
+## Contributing
+There are menus that aren't yet implemented completely. If you would like to implement one of these menus or fix a problem you've been having, feel free to submit a pull request.
