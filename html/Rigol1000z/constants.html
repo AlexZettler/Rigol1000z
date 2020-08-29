@@ -31,6 +31,8 @@
 This module contains definitions for string constants used to communicate with Rigol100z series oscilloscopes.
 &#34;&#34;&#34;
 
+from typing import Set
+
 
 class ScopeModel:
     DS1104Z_S_Plus = &#34;DS1104Z-S Plus&#34;
@@ -42,144 +44,144 @@ class ScopeModel:
 
 
 class EAcquireMode:
-    Normal = &#34;NORM&#34;
-    Averages = &#34;AVER&#34;
-    Peak = &#34;PEAK&#34;
-    HighResolution = &#34;HRES&#34;
+    Normal: str = &#34;NORM&#34;
+    Averages: str = &#34;AVER&#34;
+    Peak: str = &#34;PEAK&#34;
+    HighResolution: str = &#34;HRES&#34;
 
 
 class EDisplayMode:
-    Vectors = &#34;VEC&#34;
-    Dots = &#34;DOTS&#34;
+    Vectors: str = &#34;VEC&#34;
+    Dots: str = &#34;DOTS&#34;
 
 
 class EDisplayGrid:
-    Full = &#34;FULL&#34;
-    Half = &#34;HALF&#34;
-    NoGrid = &#34;NONE&#34;
+    Full: str = &#34;FULL&#34;
+    Half: str = &#34;HALF&#34;
+    NoGrid: str = &#34;NONE&#34;
 
 
 class EEventtableFormat:
-    Hex = &#34;HEX&#34;
-    Ascii = &#34;ASC&#34;
-    Decimal = &#34;DEC&#34;
+    Hex: str = &#34;HEX&#34;
+    Ascii: str = &#34;ASC&#34;
+    Decimal: str = &#34;DEC&#34;
 
 
 class EEventtableViewFormat:
-    Package = &#34;PACK&#34;
-    Detail = &#34;DET&#34;
-    Payload = &#34;PAYL&#34;
+    Package: str = &#34;PACK&#34;
+    Detail: str = &#34;DET&#34;
+    Payload: str = &#34;PAYL&#34;
 
 
 class EEventtableColumn:
-    Data = &#34;DATA&#34;
-    Tx = &#34;TX&#34;
-    Rx = &#34;RX&#34;
-    MISO = &#34;MISO&#34;
-    MOSI = &#34;MOSI&#34;
+    Data: str = &#34;DATA&#34;
+    Tx: str = &#34;TX&#34;
+    Rx: str = &#34;RX&#34;
+    MISO: str = &#34;MISO&#34;
+    MOSI: str = &#34;MOSI&#34;
 
 
 class EMeasureStatisticMode:
-    Difference = &#34;DIFF&#34;
-    Extremum = &#34;EXTR&#34;
+    Difference: str = &#34;DIFF&#34;
+    Extremum: str = &#34;EXTR&#34;
 
 
 class EMeasureItem:
-    VoltageMax = &#34;VMAX&#34;
-    VoltageMin = &#34;VMIN&#34;
-    VoltagePeakToPeak = &#34;VPP&#34;
-    VoltageTop = &#34;VTOP&#34;
-    VoltageBase = &#34;VBASe&#34;
-    VoltageAmplitude = &#34;VAMP&#34;
+    VoltageMax: str = &#34;VMAX&#34;
+    VoltageMin: str = &#34;VMIN&#34;
+    VoltagePeakToPeak: str = &#34;VPP&#34;
+    VoltageTop: str = &#34;VTOP&#34;
+    VoltageBase: str = &#34;VBASe&#34;
+    VoltageAmplitude: str = &#34;VAMP&#34;
 
-    VoltageUpper = &#34;VUP&#34;
-    VoltageMid = &#34;VMID&#34;
-    VoltageLower = &#34;VLOW&#34;
-    VoltageAverage = &#34;VAVG&#34;
+    VoltageUpper: str = &#34;VUP&#34;
+    VoltageMid: str = &#34;VMID&#34;
+    VoltageLower: str = &#34;VLOW&#34;
+    VoltageAverage: str = &#34;VAVG&#34;
 
-    VoltageRMS = &#34;VRMS&#34;
-    VRmsPeriod = &#34;PVRMS&#34;
+    VoltageRMS: str = &#34;VRMS&#34;
+    VRmsPeriod: str = &#34;PVRMS&#34;
 
-    VoltageOvershoot = &#34;OVER&#34;
-    VoltagePreshoot = &#34;PRES&#34;
+    VoltageOvershoot: str = &#34;OVER&#34;
+    VoltagePreshoot: str = &#34;PRES&#34;
 
-    Area = &#34;MAR&#34;
-    AreaPeriod = &#34;MPAR&#34;
+    Area: str = &#34;MAR&#34;
+    AreaPeriod: str = &#34;MPAR&#34;
 
-    Period = &#34;PER&#34;
+    Period: str = &#34;PER&#34;
 
-    Frequency = &#34;FREQ&#34;
+    Frequency: str = &#34;FREQ&#34;
 
-    RiseTime = &#34;RTIM&#34;
-    FallTime = &#34;FTIM&#34;
+    RiseTime: str = &#34;RTIM&#34;
+    FallTime: str = &#34;FTIM&#34;
 
-    WidthPositive = &#34;PWID&#34;
-    WidthNegative = &#34;NWID&#34;
+    WidthPositive: str = &#34;PWID&#34;
+    WidthNegative: str = &#34;NWID&#34;
 
-    DutyPositive = &#34;PDUT&#34;
-    DutyNegative = &#34;NDUT&#34;
+    DutyPositive: str = &#34;PDUT&#34;
+    DutyNegative: str = &#34;NDUT&#34;
 
-    DelayRise = &#34;RDEL&#34;
-    DelayFall = &#34;FDEL&#34;
+    DelayRise: str = &#34;RDEL&#34;
+    DelayFall: str = &#34;FDEL&#34;
 
-    PhaseRise = &#34;RPH&#34;
-    PhaseFall = &#34;FPH&#34;
+    PhaseRise: str = &#34;RPH&#34;
+    PhaseFall: str = &#34;FPH&#34;
 
-    TVMax = &#34;TVMAX&#34;  # time to voltage max?
-    TVMin = &#34;TVMIN&#34;  # time to voltage min?
+    TVMax: str = &#34;TVMAX&#34;  # time to voltage max?
+    TVMin: str = &#34;TVMIN&#34;  # time to voltage min?
 
-    SlewRatePositive = &#34;PSLEW&#34;
-    SlewRateNegative = &#34;NSLEW&#34;
+    SlewRatePositive: str = &#34;PSLEW&#34;
+    SlewRateNegative: str = &#34;NSLEW&#34;
 
-    Variance = &#34;VARI&#34;
+    Variance: str = &#34;VARI&#34;
 
-    PulsesPositive = &#34;PPUL&#34;
-    PulsesNegative = &#34;NPUL&#34;
-    EdgesPositive = &#34;PEDG&#34;
-    EdgesNegative = &#34;NEDG&#34;
+    PulsesPositive: str = &#34;PPUL&#34;
+    PulsesNegative: str = &#34;NPUL&#34;
+    EdgesPositive: str = &#34;PEDG&#34;
+    EdgesNegative: str = &#34;NEDG&#34;
 
 
 class EMeasurementStatisticItemType:
-    Maximum = &#34;MAX&#34;
-    Minimum = &#34;MIN&#34;
-    Current = &#34;CURR&#34;
-    Average = &#34;AVER&#34;
-    Deviation = &#34;DEV&#34;
+    Maximum: str = &#34;MAX&#34;
+    Minimum: str = &#34;MIN&#34;
+    Current: str = &#34;CURR&#34;
+    Average: str = &#34;AVER&#34;
+    Deviation: str = &#34;DEV&#34;
 
 
 class ETimebaseMode:
-    Main = &#39;main&#39;
-    XY = &#39;xy&#39;
-    Roll = &#39;roll&#39;
+    Main: str = &#39;main&#39;
+    XY: str = &#39;xy&#39;
+    Roll: str = &#39;roll&#39;
 
 
 class ESource:
-    D0 = &#34;D0&#34;
-    D1 = &#34;D1&#34;
-    D2 = &#34;D2&#34;
-    D3 = &#34;D3&#34;
-    D4 = &#34;D4&#34;
-    D5 = &#34;D5&#34;
-    D6 = &#34;D6&#34;
-    D7 = &#34;D7&#34;
-    D8 = &#34;D8&#34;
-    D9 = &#34;D9&#34;
-    D10 = &#34;D10&#34;
-    D11 = &#34;D11&#34;
-    D12 = &#34;D12&#34;
-    D13 = &#34;D13&#34;
-    D14 = &#34;D14&#34;
-    D15 = &#34;D15&#34;
+    D0: str = &#34;D0&#34;
+    D1: str = &#34;D1&#34;
+    D2: str = &#34;D2&#34;
+    D3: str = &#34;D3&#34;
+    D4: str = &#34;D4&#34;
+    D5: str = &#34;D5&#34;
+    D6: str = &#34;D6&#34;
+    D7: str = &#34;D7&#34;
+    D8: str = &#34;D8&#34;
+    D9: str = &#34;D9&#34;
+    D10: str = &#34;D10&#34;
+    D11: str = &#34;D11&#34;
+    D12: str = &#34;D12&#34;
+    D13: str = &#34;D13&#34;
+    D14: str = &#34;D14&#34;
+    D15: str = &#34;D15&#34;
 
-    Ch1 = &#34;CHAN1&#34;
-    Ch2 = &#34;CHAN2&#34;
-    Ch3 = &#34;CHAN3&#34;
-    Ch4 = &#34;CHAN4&#34;
+    Ch1: str = &#34;CHAN1&#34;
+    Ch2: str = &#34;CHAN2&#34;
+    Ch3: str = &#34;CHAN3&#34;
+    Ch4: str = &#34;CHAN4&#34;
 
-    Math = &#34;MATH&#34;
+    Math: str = &#34;MATH&#34;
 
 
-sources_digital = {
+sources_digital: Set[str] = {
     ESource.D0,
     ESource.D1,
     ESource.D2,
@@ -198,32 +200,32 @@ sources_digital = {
     ESource.D15,
 }
 
-sources_analog = {
+sources_analog: Set[str] = {
     ESource.Ch1,
     ESource.Ch2,
     ESource.Ch3,
     ESource.Ch4,
 }
 
-sources_math = {&#34;MATH&#34;}
+sources_math: Set[str] = {&#34;MATH&#34;}
 
 
 class EWaveformMode:
-    Normal = &#34;NORM&#34;
-    Max = &#34;MAX&#34;
-    Raw = &#34;RAW&#34;
+    Normal: str = &#34;NORM&#34;
+    Max: str = &#34;MAX&#34;
+    Raw: str = &#34;RAW&#34;
 
 
-waveform_modes = {EWaveformMode.Normal, EWaveformMode.Max, EWaveformMode.Raw}
+waveform_modes: Set[str] = {EWaveformMode.Normal, EWaveformMode.Max, EWaveformMode.Raw}
 
 
 class EWaveformReadFormat:
-    Word = &#34;WORD&#34;
-    Byte = &#34;BYTE&#34;
-    Ascii = &#34;ASC&#34;
+    Word: str = &#34;WORD&#34;
+    Byte: str = &#34;BYTE&#34;
+    Ascii: str = &#34;ASC&#34;
 
 
-waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWaveformReadFormat.Ascii}</code></pre>
+waveform_read_formats: Set[str] = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWaveformReadFormat.Ascii}</code></pre>
 </details>
 </section>
 <section>
@@ -245,26 +247,26 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EAcquireMode:
-    Normal = &#34;NORM&#34;
-    Averages = &#34;AVER&#34;
-    Peak = &#34;PEAK&#34;
-    HighResolution = &#34;HRES&#34;</code></pre>
+    Normal: str = &#34;NORM&#34;
+    Averages: str = &#34;AVER&#34;
+    Peak: str = &#34;PEAK&#34;
+    HighResolution: str = &#34;HRES&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EAcquireMode.Averages"><code class="name">var <span class="ident">Averages</span></code></dt>
+<dt id="Rigol1000z.constants.EAcquireMode.Averages"><code class="name">var <span class="ident">Averages</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EAcquireMode.HighResolution"><code class="name">var <span class="ident">HighResolution</span></code></dt>
+<dt id="Rigol1000z.constants.EAcquireMode.HighResolution"><code class="name">var <span class="ident">HighResolution</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EAcquireMode.Normal"><code class="name">var <span class="ident">Normal</span></code></dt>
+<dt id="Rigol1000z.constants.EAcquireMode.Normal"><code class="name">var <span class="ident">Normal</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EAcquireMode.Peak"><code class="name">var <span class="ident">Peak</span></code></dt>
+<dt id="Rigol1000z.constants.EAcquireMode.Peak"><code class="name">var <span class="ident">Peak</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -280,21 +282,21 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EDisplayGrid:
-    Full = &#34;FULL&#34;
-    Half = &#34;HALF&#34;
-    NoGrid = &#34;NONE&#34;</code></pre>
+    Full: str = &#34;FULL&#34;
+    Half: str = &#34;HALF&#34;
+    NoGrid: str = &#34;NONE&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EDisplayGrid.Full"><code class="name">var <span class="ident">Full</span></code></dt>
+<dt id="Rigol1000z.constants.EDisplayGrid.Full"><code class="name">var <span class="ident">Full</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EDisplayGrid.Half"><code class="name">var <span class="ident">Half</span></code></dt>
+<dt id="Rigol1000z.constants.EDisplayGrid.Half"><code class="name">var <span class="ident">Half</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EDisplayGrid.NoGrid"><code class="name">var <span class="ident">NoGrid</span></code></dt>
+<dt id="Rigol1000z.constants.EDisplayGrid.NoGrid"><code class="name">var <span class="ident">NoGrid</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -310,16 +312,16 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EDisplayMode:
-    Vectors = &#34;VEC&#34;
-    Dots = &#34;DOTS&#34;</code></pre>
+    Vectors: str = &#34;VEC&#34;
+    Dots: str = &#34;DOTS&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EDisplayMode.Dots"><code class="name">var <span class="ident">Dots</span></code></dt>
+<dt id="Rigol1000z.constants.EDisplayMode.Dots"><code class="name">var <span class="ident">Dots</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EDisplayMode.Vectors"><code class="name">var <span class="ident">Vectors</span></code></dt>
+<dt id="Rigol1000z.constants.EDisplayMode.Vectors"><code class="name">var <span class="ident">Vectors</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -335,31 +337,31 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EEventtableColumn:
-    Data = &#34;DATA&#34;
-    Tx = &#34;TX&#34;
-    Rx = &#34;RX&#34;
-    MISO = &#34;MISO&#34;
-    MOSI = &#34;MOSI&#34;</code></pre>
+    Data: str = &#34;DATA&#34;
+    Tx: str = &#34;TX&#34;
+    Rx: str = &#34;RX&#34;
+    MISO: str = &#34;MISO&#34;
+    MOSI: str = &#34;MOSI&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EEventtableColumn.Data"><code class="name">var <span class="ident">Data</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableColumn.Data"><code class="name">var <span class="ident">Data</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EEventtableColumn.MISO"><code class="name">var <span class="ident">MISO</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableColumn.MISO"><code class="name">var <span class="ident">MISO</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EEventtableColumn.MOSI"><code class="name">var <span class="ident">MOSI</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableColumn.MOSI"><code class="name">var <span class="ident">MOSI</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EEventtableColumn.Rx"><code class="name">var <span class="ident">Rx</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableColumn.Rx"><code class="name">var <span class="ident">Rx</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EEventtableColumn.Tx"><code class="name">var <span class="ident">Tx</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableColumn.Tx"><code class="name">var <span class="ident">Tx</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -375,21 +377,21 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EEventtableFormat:
-    Hex = &#34;HEX&#34;
-    Ascii = &#34;ASC&#34;
-    Decimal = &#34;DEC&#34;</code></pre>
+    Hex: str = &#34;HEX&#34;
+    Ascii: str = &#34;ASC&#34;
+    Decimal: str = &#34;DEC&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EEventtableFormat.Ascii"><code class="name">var <span class="ident">Ascii</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableFormat.Ascii"><code class="name">var <span class="ident">Ascii</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EEventtableFormat.Decimal"><code class="name">var <span class="ident">Decimal</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableFormat.Decimal"><code class="name">var <span class="ident">Decimal</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EEventtableFormat.Hex"><code class="name">var <span class="ident">Hex</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableFormat.Hex"><code class="name">var <span class="ident">Hex</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -405,21 +407,21 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EEventtableViewFormat:
-    Package = &#34;PACK&#34;
-    Detail = &#34;DET&#34;
-    Payload = &#34;PAYL&#34;</code></pre>
+    Package: str = &#34;PACK&#34;
+    Detail: str = &#34;DET&#34;
+    Payload: str = &#34;PAYL&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EEventtableViewFormat.Detail"><code class="name">var <span class="ident">Detail</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableViewFormat.Detail"><code class="name">var <span class="ident">Detail</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EEventtableViewFormat.Package"><code class="name">var <span class="ident">Package</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableViewFormat.Package"><code class="name">var <span class="ident">Package</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EEventtableViewFormat.Payload"><code class="name">var <span class="ident">Payload</span></code></dt>
+<dt id="Rigol1000z.constants.EEventtableViewFormat.Payload"><code class="name">var <span class="ident">Payload</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -435,206 +437,206 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EMeasureItem:
-    VoltageMax = &#34;VMAX&#34;
-    VoltageMin = &#34;VMIN&#34;
-    VoltagePeakToPeak = &#34;VPP&#34;
-    VoltageTop = &#34;VTOP&#34;
-    VoltageBase = &#34;VBASe&#34;
-    VoltageAmplitude = &#34;VAMP&#34;
+    VoltageMax: str = &#34;VMAX&#34;
+    VoltageMin: str = &#34;VMIN&#34;
+    VoltagePeakToPeak: str = &#34;VPP&#34;
+    VoltageTop: str = &#34;VTOP&#34;
+    VoltageBase: str = &#34;VBASe&#34;
+    VoltageAmplitude: str = &#34;VAMP&#34;
 
-    VoltageUpper = &#34;VUP&#34;
-    VoltageMid = &#34;VMID&#34;
-    VoltageLower = &#34;VLOW&#34;
-    VoltageAverage = &#34;VAVG&#34;
+    VoltageUpper: str = &#34;VUP&#34;
+    VoltageMid: str = &#34;VMID&#34;
+    VoltageLower: str = &#34;VLOW&#34;
+    VoltageAverage: str = &#34;VAVG&#34;
 
-    VoltageRMS = &#34;VRMS&#34;
-    VRmsPeriod = &#34;PVRMS&#34;
+    VoltageRMS: str = &#34;VRMS&#34;
+    VRmsPeriod: str = &#34;PVRMS&#34;
 
-    VoltageOvershoot = &#34;OVER&#34;
-    VoltagePreshoot = &#34;PRES&#34;
+    VoltageOvershoot: str = &#34;OVER&#34;
+    VoltagePreshoot: str = &#34;PRES&#34;
 
-    Area = &#34;MAR&#34;
-    AreaPeriod = &#34;MPAR&#34;
+    Area: str = &#34;MAR&#34;
+    AreaPeriod: str = &#34;MPAR&#34;
 
-    Period = &#34;PER&#34;
+    Period: str = &#34;PER&#34;
 
-    Frequency = &#34;FREQ&#34;
+    Frequency: str = &#34;FREQ&#34;
 
-    RiseTime = &#34;RTIM&#34;
-    FallTime = &#34;FTIM&#34;
+    RiseTime: str = &#34;RTIM&#34;
+    FallTime: str = &#34;FTIM&#34;
 
-    WidthPositive = &#34;PWID&#34;
-    WidthNegative = &#34;NWID&#34;
+    WidthPositive: str = &#34;PWID&#34;
+    WidthNegative: str = &#34;NWID&#34;
 
-    DutyPositive = &#34;PDUT&#34;
-    DutyNegative = &#34;NDUT&#34;
+    DutyPositive: str = &#34;PDUT&#34;
+    DutyNegative: str = &#34;NDUT&#34;
 
-    DelayRise = &#34;RDEL&#34;
-    DelayFall = &#34;FDEL&#34;
+    DelayRise: str = &#34;RDEL&#34;
+    DelayFall: str = &#34;FDEL&#34;
 
-    PhaseRise = &#34;RPH&#34;
-    PhaseFall = &#34;FPH&#34;
+    PhaseRise: str = &#34;RPH&#34;
+    PhaseFall: str = &#34;FPH&#34;
 
-    TVMax = &#34;TVMAX&#34;  # time to voltage max?
-    TVMin = &#34;TVMIN&#34;  # time to voltage min?
+    TVMax: str = &#34;TVMAX&#34;  # time to voltage max?
+    TVMin: str = &#34;TVMIN&#34;  # time to voltage min?
 
-    SlewRatePositive = &#34;PSLEW&#34;
-    SlewRateNegative = &#34;NSLEW&#34;
+    SlewRatePositive: str = &#34;PSLEW&#34;
+    SlewRateNegative: str = &#34;NSLEW&#34;
 
-    Variance = &#34;VARI&#34;
+    Variance: str = &#34;VARI&#34;
 
-    PulsesPositive = &#34;PPUL&#34;
-    PulsesNegative = &#34;NPUL&#34;
-    EdgesPositive = &#34;PEDG&#34;
-    EdgesNegative = &#34;NEDG&#34;</code></pre>
+    PulsesPositive: str = &#34;PPUL&#34;
+    PulsesNegative: str = &#34;NPUL&#34;
+    EdgesPositive: str = &#34;PEDG&#34;
+    EdgesNegative: str = &#34;NEDG&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EMeasureItem.Area"><code class="name">var <span class="ident">Area</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.Area"><code class="name">var <span class="ident">Area</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.AreaPeriod"><code class="name">var <span class="ident">AreaPeriod</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.AreaPeriod"><code class="name">var <span class="ident">AreaPeriod</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.DelayFall"><code class="name">var <span class="ident">DelayFall</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.DelayFall"><code class="name">var <span class="ident">DelayFall</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.DelayRise"><code class="name">var <span class="ident">DelayRise</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.DelayRise"><code class="name">var <span class="ident">DelayRise</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.DutyNegative"><code class="name">var <span class="ident">DutyNegative</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.DutyNegative"><code class="name">var <span class="ident">DutyNegative</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.DutyPositive"><code class="name">var <span class="ident">DutyPositive</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.DutyPositive"><code class="name">var <span class="ident">DutyPositive</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.EdgesNegative"><code class="name">var <span class="ident">EdgesNegative</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.EdgesNegative"><code class="name">var <span class="ident">EdgesNegative</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.EdgesPositive"><code class="name">var <span class="ident">EdgesPositive</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.EdgesPositive"><code class="name">var <span class="ident">EdgesPositive</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.FallTime"><code class="name">var <span class="ident">FallTime</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.FallTime"><code class="name">var <span class="ident">FallTime</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.Frequency"><code class="name">var <span class="ident">Frequency</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.Frequency"><code class="name">var <span class="ident">Frequency</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.Period"><code class="name">var <span class="ident">Period</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.Period"><code class="name">var <span class="ident">Period</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.PhaseFall"><code class="name">var <span class="ident">PhaseFall</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.PhaseFall"><code class="name">var <span class="ident">PhaseFall</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.PhaseRise"><code class="name">var <span class="ident">PhaseRise</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.PhaseRise"><code class="name">var <span class="ident">PhaseRise</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.PulsesNegative"><code class="name">var <span class="ident">PulsesNegative</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.PulsesNegative"><code class="name">var <span class="ident">PulsesNegative</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.PulsesPositive"><code class="name">var <span class="ident">PulsesPositive</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.PulsesPositive"><code class="name">var <span class="ident">PulsesPositive</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.RiseTime"><code class="name">var <span class="ident">RiseTime</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.RiseTime"><code class="name">var <span class="ident">RiseTime</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.SlewRateNegative"><code class="name">var <span class="ident">SlewRateNegative</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.SlewRateNegative"><code class="name">var <span class="ident">SlewRateNegative</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.SlewRatePositive"><code class="name">var <span class="ident">SlewRatePositive</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.SlewRatePositive"><code class="name">var <span class="ident">SlewRatePositive</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.TVMax"><code class="name">var <span class="ident">TVMax</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.TVMax"><code class="name">var <span class="ident">TVMax</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.TVMin"><code class="name">var <span class="ident">TVMin</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.TVMin"><code class="name">var <span class="ident">TVMin</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VRmsPeriod"><code class="name">var <span class="ident">VRmsPeriod</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VRmsPeriod"><code class="name">var <span class="ident">VRmsPeriod</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.Variance"><code class="name">var <span class="ident">Variance</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.Variance"><code class="name">var <span class="ident">Variance</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageAmplitude"><code class="name">var <span class="ident">VoltageAmplitude</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageAmplitude"><code class="name">var <span class="ident">VoltageAmplitude</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageAverage"><code class="name">var <span class="ident">VoltageAverage</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageAverage"><code class="name">var <span class="ident">VoltageAverage</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageBase"><code class="name">var <span class="ident">VoltageBase</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageBase"><code class="name">var <span class="ident">VoltageBase</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageLower"><code class="name">var <span class="ident">VoltageLower</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageLower"><code class="name">var <span class="ident">VoltageLower</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageMax"><code class="name">var <span class="ident">VoltageMax</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageMax"><code class="name">var <span class="ident">VoltageMax</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageMid"><code class="name">var <span class="ident">VoltageMid</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageMid"><code class="name">var <span class="ident">VoltageMid</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageMin"><code class="name">var <span class="ident">VoltageMin</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageMin"><code class="name">var <span class="ident">VoltageMin</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageOvershoot"><code class="name">var <span class="ident">VoltageOvershoot</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageOvershoot"><code class="name">var <span class="ident">VoltageOvershoot</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltagePeakToPeak"><code class="name">var <span class="ident">VoltagePeakToPeak</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltagePeakToPeak"><code class="name">var <span class="ident">VoltagePeakToPeak</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltagePreshoot"><code class="name">var <span class="ident">VoltagePreshoot</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltagePreshoot"><code class="name">var <span class="ident">VoltagePreshoot</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageRMS"><code class="name">var <span class="ident">VoltageRMS</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageRMS"><code class="name">var <span class="ident">VoltageRMS</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageTop"><code class="name">var <span class="ident">VoltageTop</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageTop"><code class="name">var <span class="ident">VoltageTop</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.VoltageUpper"><code class="name">var <span class="ident">VoltageUpper</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.VoltageUpper"><code class="name">var <span class="ident">VoltageUpper</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.WidthNegative"><code class="name">var <span class="ident">WidthNegative</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.WidthNegative"><code class="name">var <span class="ident">WidthNegative</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureItem.WidthPositive"><code class="name">var <span class="ident">WidthPositive</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureItem.WidthPositive"><code class="name">var <span class="ident">WidthPositive</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -650,16 +652,16 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EMeasureStatisticMode:
-    Difference = &#34;DIFF&#34;
-    Extremum = &#34;EXTR&#34;</code></pre>
+    Difference: str = &#34;DIFF&#34;
+    Extremum: str = &#34;EXTR&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EMeasureStatisticMode.Difference"><code class="name">var <span class="ident">Difference</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureStatisticMode.Difference"><code class="name">var <span class="ident">Difference</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasureStatisticMode.Extremum"><code class="name">var <span class="ident">Extremum</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasureStatisticMode.Extremum"><code class="name">var <span class="ident">Extremum</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -675,31 +677,31 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EMeasurementStatisticItemType:
-    Maximum = &#34;MAX&#34;
-    Minimum = &#34;MIN&#34;
-    Current = &#34;CURR&#34;
-    Average = &#34;AVER&#34;
-    Deviation = &#34;DEV&#34;</code></pre>
+    Maximum: str = &#34;MAX&#34;
+    Minimum: str = &#34;MIN&#34;
+    Current: str = &#34;CURR&#34;
+    Average: str = &#34;AVER&#34;
+    Deviation: str = &#34;DEV&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Average"><code class="name">var <span class="ident">Average</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Average"><code class="name">var <span class="ident">Average</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Current"><code class="name">var <span class="ident">Current</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Current"><code class="name">var <span class="ident">Current</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Deviation"><code class="name">var <span class="ident">Deviation</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Deviation"><code class="name">var <span class="ident">Deviation</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Maximum"><code class="name">var <span class="ident">Maximum</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Maximum"><code class="name">var <span class="ident">Maximum</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Minimum"><code class="name">var <span class="ident">Minimum</span></code></dt>
+<dt id="Rigol1000z.constants.EMeasurementStatisticItemType.Minimum"><code class="name">var <span class="ident">Minimum</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -715,113 +717,113 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ESource:
-    D0 = &#34;D0&#34;
-    D1 = &#34;D1&#34;
-    D2 = &#34;D2&#34;
-    D3 = &#34;D3&#34;
-    D4 = &#34;D4&#34;
-    D5 = &#34;D5&#34;
-    D6 = &#34;D6&#34;
-    D7 = &#34;D7&#34;
-    D8 = &#34;D8&#34;
-    D9 = &#34;D9&#34;
-    D10 = &#34;D10&#34;
-    D11 = &#34;D11&#34;
-    D12 = &#34;D12&#34;
-    D13 = &#34;D13&#34;
-    D14 = &#34;D14&#34;
-    D15 = &#34;D15&#34;
+    D0: str = &#34;D0&#34;
+    D1: str = &#34;D1&#34;
+    D2: str = &#34;D2&#34;
+    D3: str = &#34;D3&#34;
+    D4: str = &#34;D4&#34;
+    D5: str = &#34;D5&#34;
+    D6: str = &#34;D6&#34;
+    D7: str = &#34;D7&#34;
+    D8: str = &#34;D8&#34;
+    D9: str = &#34;D9&#34;
+    D10: str = &#34;D10&#34;
+    D11: str = &#34;D11&#34;
+    D12: str = &#34;D12&#34;
+    D13: str = &#34;D13&#34;
+    D14: str = &#34;D14&#34;
+    D15: str = &#34;D15&#34;
 
-    Ch1 = &#34;CHAN1&#34;
-    Ch2 = &#34;CHAN2&#34;
-    Ch3 = &#34;CHAN3&#34;
-    Ch4 = &#34;CHAN4&#34;
+    Ch1: str = &#34;CHAN1&#34;
+    Ch2: str = &#34;CHAN2&#34;
+    Ch3: str = &#34;CHAN3&#34;
+    Ch4: str = &#34;CHAN4&#34;
 
-    Math = &#34;MATH&#34;</code></pre>
+    Math: str = &#34;MATH&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.ESource.Ch1"><code class="name">var <span class="ident">Ch1</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.Ch1"><code class="name">var <span class="ident">Ch1</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.Ch2"><code class="name">var <span class="ident">Ch2</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.Ch2"><code class="name">var <span class="ident">Ch2</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.Ch3"><code class="name">var <span class="ident">Ch3</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.Ch3"><code class="name">var <span class="ident">Ch3</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.Ch4"><code class="name">var <span class="ident">Ch4</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.Ch4"><code class="name">var <span class="ident">Ch4</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D0"><code class="name">var <span class="ident">D0</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D0"><code class="name">var <span class="ident">D0</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D1"><code class="name">var <span class="ident">D1</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D1"><code class="name">var <span class="ident">D1</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D10"><code class="name">var <span class="ident">D10</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D10"><code class="name">var <span class="ident">D10</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D11"><code class="name">var <span class="ident">D11</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D11"><code class="name">var <span class="ident">D11</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D12"><code class="name">var <span class="ident">D12</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D12"><code class="name">var <span class="ident">D12</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D13"><code class="name">var <span class="ident">D13</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D13"><code class="name">var <span class="ident">D13</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D14"><code class="name">var <span class="ident">D14</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D14"><code class="name">var <span class="ident">D14</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D15"><code class="name">var <span class="ident">D15</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D15"><code class="name">var <span class="ident">D15</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D2"><code class="name">var <span class="ident">D2</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D2"><code class="name">var <span class="ident">D2</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D3"><code class="name">var <span class="ident">D3</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D3"><code class="name">var <span class="ident">D3</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D4"><code class="name">var <span class="ident">D4</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D4"><code class="name">var <span class="ident">D4</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D5"><code class="name">var <span class="ident">D5</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D5"><code class="name">var <span class="ident">D5</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D6"><code class="name">var <span class="ident">D6</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D6"><code class="name">var <span class="ident">D6</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D7"><code class="name">var <span class="ident">D7</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D7"><code class="name">var <span class="ident">D7</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D8"><code class="name">var <span class="ident">D8</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D8"><code class="name">var <span class="ident">D8</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.D9"><code class="name">var <span class="ident">D9</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.D9"><code class="name">var <span class="ident">D9</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ESource.Math"><code class="name">var <span class="ident">Math</span></code></dt>
+<dt id="Rigol1000z.constants.ESource.Math"><code class="name">var <span class="ident">Math</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -837,21 +839,21 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ETimebaseMode:
-    Main = &#39;main&#39;
-    XY = &#39;xy&#39;
-    Roll = &#39;roll&#39;</code></pre>
+    Main: str = &#39;main&#39;
+    XY: str = &#39;xy&#39;
+    Roll: str = &#39;roll&#39;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.ETimebaseMode.Main"><code class="name">var <span class="ident">Main</span></code></dt>
+<dt id="Rigol1000z.constants.ETimebaseMode.Main"><code class="name">var <span class="ident">Main</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ETimebaseMode.Roll"><code class="name">var <span class="ident">Roll</span></code></dt>
+<dt id="Rigol1000z.constants.ETimebaseMode.Roll"><code class="name">var <span class="ident">Roll</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.ETimebaseMode.XY"><code class="name">var <span class="ident">XY</span></code></dt>
+<dt id="Rigol1000z.constants.ETimebaseMode.XY"><code class="name">var <span class="ident">XY</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -867,21 +869,21 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EWaveformMode:
-    Normal = &#34;NORM&#34;
-    Max = &#34;MAX&#34;
-    Raw = &#34;RAW&#34;</code></pre>
+    Normal: str = &#34;NORM&#34;
+    Max: str = &#34;MAX&#34;
+    Raw: str = &#34;RAW&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EWaveformMode.Max"><code class="name">var <span class="ident">Max</span></code></dt>
+<dt id="Rigol1000z.constants.EWaveformMode.Max"><code class="name">var <span class="ident">Max</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EWaveformMode.Normal"><code class="name">var <span class="ident">Normal</span></code></dt>
+<dt id="Rigol1000z.constants.EWaveformMode.Normal"><code class="name">var <span class="ident">Normal</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EWaveformMode.Raw"><code class="name">var <span class="ident">Raw</span></code></dt>
+<dt id="Rigol1000z.constants.EWaveformMode.Raw"><code class="name">var <span class="ident">Raw</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
@@ -897,21 +899,21 @@ waveform_read_formats = {EWaveformReadFormat.Word, EWaveformReadFormat.Byte, EWa
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class EWaveformReadFormat:
-    Word = &#34;WORD&#34;
-    Byte = &#34;BYTE&#34;
-    Ascii = &#34;ASC&#34;</code></pre>
+    Word: str = &#34;WORD&#34;
+    Byte: str = &#34;BYTE&#34;
+    Ascii: str = &#34;ASC&#34;</code></pre>
 </details>
 <h3>Class variables</h3>
 <dl>
-<dt id="Rigol1000z.constants.EWaveformReadFormat.Ascii"><code class="name">var <span class="ident">Ascii</span></code></dt>
+<dt id="Rigol1000z.constants.EWaveformReadFormat.Ascii"><code class="name">var <span class="ident">Ascii</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EWaveformReadFormat.Byte"><code class="name">var <span class="ident">Byte</span></code></dt>
+<dt id="Rigol1000z.constants.EWaveformReadFormat.Byte"><code class="name">var <span class="ident">Byte</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>
-<dt id="Rigol1000z.constants.EWaveformReadFormat.Word"><code class="name">var <span class="ident">Word</span></code></dt>
+<dt id="Rigol1000z.constants.EWaveformReadFormat.Word"><code class="name">var <span class="ident">Word</span> : str</code></dt>
 <dd>
 <div class="desc"></div>
 </dd>

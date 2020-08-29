@@ -1,5 +1,4 @@
-# From answer found at:
-# https://stackoverflow.com/questions/18621513/python-insert-numpy-array-into-sqlite3-database
+
 
 import sqlite3
 

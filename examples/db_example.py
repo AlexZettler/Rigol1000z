@@ -36,9 +36,7 @@ with Rigol1000z() as osc:
         osc.run()  # Move back to run mode when data collection is complete
         sleep(2.0)
 
-    c = capture_from_database_id(db_id)
+    c = capture_from_database_id(db_id)  # Retrieve the capture from the database and populate the waveforms captured
     c.view_graph_plotly()
 
-    print("oh")
-
-print("done")
+print("database example complete :)")

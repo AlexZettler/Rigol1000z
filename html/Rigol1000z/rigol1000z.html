@@ -31,12 +31,19 @@
 This module contains the definition for the high-level Rigol1000z driver.
 &#34;&#34;&#34;
 
-import numpy as _np
-import tqdm as _tqdm
-import pyvisa as _visa
+# standard libraries
+from typing import List, Tuple, Dict
+from datetime import datetime
 from time import sleep
+
+# pip libraries
+import numpy as _np  # type: ignore
+import pyvisa  # type: ignore
+
+# packages from this library
 from Rigol1000z.commands import *
-from typing import List
+from Rigol1000z.sql_integration.sql_commands import db
+from Rigol1000z.waveform_objs import Capture, WaveformWithContext
 
 
 class Rigol1000z(Rigol1000zCommandMenu):
@@ -44,7 +51,20 @@ class Rigol1000z(Rigol1000zCommandMenu):
     The Rigol DS1000z series oscilloscope driver.
     &#34;&#34;&#34;
 
-    def __init__(self, visa_resource: _visa.Resource):
+    def __init__(self, visa_resource: pyvisa.Resource = None):
+
+        # Load the first resource is:
+        #       * not a resource passed into the constructor
+        #       * only one resource available
+        if visa_resource is None:
+            rm = pyvisa.ResourceManager()  # Initialize the visa resource manager
+            available_resources: Tuple[str] = rm.list_resources()
+
+            assert len(available_resources) == 1
+
+            # Get the first visa device connected
+            visa_resource = rm.open_resource(rm.list_resources()[0])
+
         # Instantiate The scope as a visa command menu
         super().__init__(visa_resource)
 
@@ -225,25 +245,33 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         return raw_img
 
-    def get_data(self, mode=EWaveformMode.Normal, filename=None):
-        &#34;&#34;&#34;
-        Download the captured voltage points from the oscilloscope.
+    # def get_data(self,
+    #             channels: Iterable[int],
+    #             mode: str = EWaveformMode.Normal,
+    #             filename: str = None,
+    #             wait_time_before_read: float = 0.5
+    #             ) -&gt; Tuple[_np.ndarray, Dict[any, _np.ndarray]]:
+    #
+    #    ch_dict = self.get_waveform_bytes_with_context(channels, mode)
+    #
+    #    if filename:
+    #        print(f&#34;writing to: {filename}&#34;)
+    #        try:
+    #            os.remove(filename)
+    #        except OSError:
+    #            pass
+    #        _np.savetxt(
+    #            filename,
+    #            _np.column_stack(
+    #                (time_series, *(arr for ch, arr in all_channel_data.items()))
+    #            ), &#39;%.12e&#39;, &#39;, &#39;, &#39;\n&#39;
+    #        )
+    #
+    #    return time_series, all_channel_data
 
-        Args:
-            mode (str): &#39;norm&#39; if only the points on the screen should be
-                downloaded, and &#39;raw&#39; if all the points the ADC has captured
-                should be downloaded.  Default is &#39;norm&#39;.
-            filename (None, str): Filename the data should be saved to.  Default
-                is `None`; the data is not saved to a file.
-
-        Returns:
-            2-tuple: A tuple of two lists.  The first list is the time values
-                and the second list is the voltage values.
-
-        &#34;&#34;&#34;
-
-        # Stop scope to capture waveform state
-        self.stop()
+    def get_capture(
+            self, mode: str = EWaveformMode.Normal,
+    ) -&gt; Capture:
 
         # Set mode
         assert mode in {EWaveformMode.Normal, EWaveformMode.Raw}
@@ -251,15 +279,27 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         # Set transmission format
         self.waveform.read_format = EWaveformReadFormat.Byte
+        #print(self.waveform.read_format)
 
-        # Create data structures to populate
-        time_series = None
-        all_channel_data = []
+        # todo: wait until data is ready with the new settings
+
+        # Stop scope to capture waveform state
+        wait_time_before_read = 3.0
+        sleep(wait_time_before_read / 2)
+        self.stop()
+        sleep(wait_time_before_read / 2)
+
+        # Get general info about the waveform from the preamble
+        info_initial: PreambleContext = self.waveform.data_premable
+        total_wf_period: float = float(info_initial.points * info_initial.x_increment)
+        del info_initial
+
+        # Create dictionary to populate channel data with
+        capture = Capture(total_wf_period)
 
         # Iterate over possible channels
-        for c in range(1, 5):
+        for c in [n.channel for n in self.channel_list]:
 
-            # Capture the waveform if the channel is enabled
             if self[c].enabled:
 
                 self.waveform.source = self[c].name
@@ -267,48 +307,61 @@ class Rigol1000z(Rigol1000zCommandMenu):
                 # retrieve the data preable
                 info: PreambleContext = self.waveform.data_premable
 
-                # Generate the time series for the data
-                time_series = _np.arange(0, info.points * info.x_increment, info.x_increment)
-
                 max_num_pts: int = 250000
                 num_blocks: int = info.points // max_num_pts
                 last_block_pts: int = info.points % max_num_pts
 
-                datas = []
-                # print(f&#34;Data being gathered for Ch{}&#34;)
-                for i in _tqdm.tqdm(range(num_blocks + 1), ncols=60):
+                print(f&#34;Data being gathered for Ch{c}&#34;)
+                # print(
+                #    f&#34;Block data:\n&#34;
+                #    f&#34;    max_num_pts:    {max_num_pts}\n&#34;
+                #    f&#34;    num_blocks:     {num_blocks}\n&#34;
+                #    f&#34;    last_block_pts: {last_block_pts}\n&#34;
+                # )
+
+                data_blocks: List[_np.ndarray] = []
+
+                for i in range(num_blocks + 1):
                     if i &lt; num_blocks:
                         self.waveform.read_start_point = 1 + i * 250000
                         self.waveform.read_end_point = 250000 * (i + 1)
+
                     else:
                         if last_block_pts:
                             self.waveform.read_start_point = 1 + num_blocks * 250000
                             self.waveform.read_end_point = num_blocks * 250000 + last_block_pts
-                            sleep(0.2)
+
                         else:
                             break
                     data = self.visa_ask_raw(&#39;:wav:data?&#39;, 250000)
 
-                    data = _np.frombuffer(data[11:-1], &#39;B&#39;)  # Last byte marks the end of the message.
-                    datas.append(data)
+                    # print(f&#34;RAW DATA RETURNED FROM SCOPE TYPE: {type(data)}&#34;)
 
-                # Attach each data packet received into a complete data series
-                datas = _np.concatenate(datas)
+                    # todo: 10MHz sine wave seems to return one less data point than the preamble indicates.
+                    #  I believe this has to do with data that is only one block long not containing an end character.
+                    #  further testing needed.
+                    data = _np.frombuffer(data[11:-1], &#34;B&#34;)  # Last byte marks the end of the message.
 
-                # Add the data series to the list of data series
-                all_channel_data.append(
-                    (datas - info.y_origin - info.y_reference) * info.y_increment
+                    data_blocks.append(data)
+
+                y_offset = -info.y_origin - info.y_reference
+
+                if len(data_blocks) == 1:
+                    data_array = data_blocks[0]
+                else:
+                    data_array = _np.concatenate(data_blocks, axis=None)
+
+                capture.add_waveform(
+                    str(c),
+                    WaveformWithContext(
+                        channel_name=str(c),
+                        data=data_array,
+                        vertical_offset=y_offset,
+                        vertical_scale=info.y_increment
+                    )
                 )
 
-        if filename:
-            print(f&#34;writing to: {filename}&#34;)
-            try:
-                os.remove(filename)
-            except OSError:
-                pass
-            _np.savetxt(filename, _np.column_stack((time_series, *all_channel_data)), &#39;%.12e&#39;, &#39;, &#39;, &#39;\n&#39;)
-
-        return time_series, all_channel_data</code></pre>
+        return capture</code></pre>
 </details>
 </section>
 <section>
@@ -322,7 +375,7 @@ class Rigol1000z(Rigol1000zCommandMenu):
 <dl>
 <dt id="Rigol1000z.rigol1000z.Rigol1000z"><code class="flex name class">
 <span>class <span class="ident">Rigol1000z</span></span>
-<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>The Rigol DS1000z series oscilloscope driver.</p></div>
@@ -335,7 +388,20 @@ class Rigol1000z(Rigol1000zCommandMenu):
     The Rigol DS1000z series oscilloscope driver.
     &#34;&#34;&#34;
 
-    def __init__(self, visa_resource: _visa.Resource):
+    def __init__(self, visa_resource: pyvisa.Resource = None):
+
+        # Load the first resource is:
+        #       * not a resource passed into the constructor
+        #       * only one resource available
+        if visa_resource is None:
+            rm = pyvisa.ResourceManager()  # Initialize the visa resource manager
+            available_resources: Tuple[str] = rm.list_resources()
+
+            assert len(available_resources) == 1
+
+            # Get the first visa device connected
+            visa_resource = rm.open_resource(rm.list_resources()[0])
+
         # Instantiate The scope as a visa command menu
         super().__init__(visa_resource)
 
@@ -516,25 +582,33 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         return raw_img
 
-    def get_data(self, mode=EWaveformMode.Normal, filename=None):
-        &#34;&#34;&#34;
-        Download the captured voltage points from the oscilloscope.
+    # def get_data(self,
+    #             channels: Iterable[int],
+    #             mode: str = EWaveformMode.Normal,
+    #             filename: str = None,
+    #             wait_time_before_read: float = 0.5
+    #             ) -&gt; Tuple[_np.ndarray, Dict[any, _np.ndarray]]:
+    #
+    #    ch_dict = self.get_waveform_bytes_with_context(channels, mode)
+    #
+    #    if filename:
+    #        print(f&#34;writing to: {filename}&#34;)
+    #        try:
+    #            os.remove(filename)
+    #        except OSError:
+    #            pass
+    #        _np.savetxt(
+    #            filename,
+    #            _np.column_stack(
+    #                (time_series, *(arr for ch, arr in all_channel_data.items()))
+    #            ), &#39;%.12e&#39;, &#39;, &#39;, &#39;\n&#39;
+    #        )
+    #
+    #    return time_series, all_channel_data
 
-        Args:
-            mode (str): &#39;norm&#39; if only the points on the screen should be
-                downloaded, and &#39;raw&#39; if all the points the ADC has captured
-                should be downloaded.  Default is &#39;norm&#39;.
-            filename (None, str): Filename the data should be saved to.  Default
-                is `None`; the data is not saved to a file.
-
-        Returns:
-            2-tuple: A tuple of two lists.  The first list is the time values
-                and the second list is the voltage values.
-
-        &#34;&#34;&#34;
-
-        # Stop scope to capture waveform state
-        self.stop()
+    def get_capture(
+            self, mode: str = EWaveformMode.Normal,
+    ) -&gt; Capture:
 
         # Set mode
         assert mode in {EWaveformMode.Normal, EWaveformMode.Raw}
@@ -542,15 +616,27 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         # Set transmission format
         self.waveform.read_format = EWaveformReadFormat.Byte
+        #print(self.waveform.read_format)
 
-        # Create data structures to populate
-        time_series = None
-        all_channel_data = []
+        # todo: wait until data is ready with the new settings
+
+        # Stop scope to capture waveform state
+        wait_time_before_read = 3.0
+        sleep(wait_time_before_read / 2)
+        self.stop()
+        sleep(wait_time_before_read / 2)
+
+        # Get general info about the waveform from the preamble
+        info_initial: PreambleContext = self.waveform.data_premable
+        total_wf_period: float = float(info_initial.points * info_initial.x_increment)
+        del info_initial
+
+        # Create dictionary to populate channel data with
+        capture = Capture(total_wf_period)
 
         # Iterate over possible channels
-        for c in range(1, 5):
+        for c in [n.channel for n in self.channel_list]:
 
-            # Capture the waveform if the channel is enabled
             if self[c].enabled:
 
                 self.waveform.source = self[c].name
@@ -558,48 +644,61 @@ class Rigol1000z(Rigol1000zCommandMenu):
                 # retrieve the data preable
                 info: PreambleContext = self.waveform.data_premable
 
-                # Generate the time series for the data
-                time_series = _np.arange(0, info.points * info.x_increment, info.x_increment)
-
                 max_num_pts: int = 250000
                 num_blocks: int = info.points // max_num_pts
                 last_block_pts: int = info.points % max_num_pts
 
-                datas = []
-                # print(f&#34;Data being gathered for Ch{}&#34;)
-                for i in _tqdm.tqdm(range(num_blocks + 1), ncols=60):
+                print(f&#34;Data being gathered for Ch{c}&#34;)
+                # print(
+                #    f&#34;Block data:\n&#34;
+                #    f&#34;    max_num_pts:    {max_num_pts}\n&#34;
+                #    f&#34;    num_blocks:     {num_blocks}\n&#34;
+                #    f&#34;    last_block_pts: {last_block_pts}\n&#34;
+                # )
+
+                data_blocks: List[_np.ndarray] = []
+
+                for i in range(num_blocks + 1):
                     if i &lt; num_blocks:
                         self.waveform.read_start_point = 1 + i * 250000
                         self.waveform.read_end_point = 250000 * (i + 1)
+
                     else:
                         if last_block_pts:
                             self.waveform.read_start_point = 1 + num_blocks * 250000
                             self.waveform.read_end_point = num_blocks * 250000 + last_block_pts
-                            sleep(0.2)
+
                         else:
                             break
                     data = self.visa_ask_raw(&#39;:wav:data?&#39;, 250000)
 
-                    data = _np.frombuffer(data[11:-1], &#39;B&#39;)  # Last byte marks the end of the message.
-                    datas.append(data)
+                    # print(f&#34;RAW DATA RETURNED FROM SCOPE TYPE: {type(data)}&#34;)
 
-                # Attach each data packet received into a complete data series
-                datas = _np.concatenate(datas)
+                    # todo: 10MHz sine wave seems to return one less data point than the preamble indicates.
+                    #  I believe this has to do with data that is only one block long not containing an end character.
+                    #  further testing needed.
+                    data = _np.frombuffer(data[11:-1], &#34;B&#34;)  # Last byte marks the end of the message.
 
-                # Add the data series to the list of data series
-                all_channel_data.append(
-                    (datas - info.y_origin - info.y_reference) * info.y_increment
+                    data_blocks.append(data)
+
+                y_offset = -info.y_origin - info.y_reference
+
+                if len(data_blocks) == 1:
+                    data_array = data_blocks[0]
+                else:
+                    data_array = _np.concatenate(data_blocks, axis=None)
+
+                capture.add_waveform(
+                    str(c),
+                    WaveformWithContext(
+                        channel_name=str(c),
+                        data=data_array,
+                        vertical_offset=y_offset,
+                        vertical_scale=info.y_increment
+                    )
                 )
 
-        if filename:
-            print(f&#34;writing to: {filename}&#34;)
-            try:
-                os.remove(filename)
-            except OSError:
-                pass
-            _np.savetxt(filename, _np.column_stack((time_series, *all_channel_data)), &#39;%.12e&#39;, &#39;, &#39;, &#39;\n&#39;)
-
-        return time_series, all_channel_data</code></pre>
+        return capture</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -692,6 +791,110 @@ class Rigol1000z(Rigol1000zCommandMenu):
     self.visa_write(&#39;:tfor&#39;)</code></pre>
 </details>
 </dd>
+<dt id="Rigol1000z.rigol1000z.Rigol1000z.get_capture"><code class="name flex">
+<span>def <span class="ident">get_capture</span></span>(<span>self, mode: str = 'NORM') ‑> <a title="Rigol1000z.waveform_objs.Capture" href="waveform_objs.html#Rigol1000z.waveform_objs.Capture">Capture</a></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_capture(
+        self, mode: str = EWaveformMode.Normal,
+) -&gt; Capture:
+
+    # Set mode
+    assert mode in {EWaveformMode.Normal, EWaveformMode.Raw}
+    self.waveform.mode = mode
+
+    # Set transmission format
+    self.waveform.read_format = EWaveformReadFormat.Byte
+    #print(self.waveform.read_format)
+
+    # todo: wait until data is ready with the new settings
+
+    # Stop scope to capture waveform state
+    wait_time_before_read = 3.0
+    sleep(wait_time_before_read / 2)
+    self.stop()
+    sleep(wait_time_before_read / 2)
+
+    # Get general info about the waveform from the preamble
+    info_initial: PreambleContext = self.waveform.data_premable
+    total_wf_period: float = float(info_initial.points * info_initial.x_increment)
+    del info_initial
+
+    # Create dictionary to populate channel data with
+    capture = Capture(total_wf_period)
+
+    # Iterate over possible channels
+    for c in [n.channel for n in self.channel_list]:
+
+        if self[c].enabled:
+
+            self.waveform.source = self[c].name
+
+            # retrieve the data preable
+            info: PreambleContext = self.waveform.data_premable
+
+            max_num_pts: int = 250000
+            num_blocks: int = info.points // max_num_pts
+            last_block_pts: int = info.points % max_num_pts
+
+            print(f&#34;Data being gathered for Ch{c}&#34;)
+            # print(
+            #    f&#34;Block data:\n&#34;
+            #    f&#34;    max_num_pts:    {max_num_pts}\n&#34;
+            #    f&#34;    num_blocks:     {num_blocks}\n&#34;
+            #    f&#34;    last_block_pts: {last_block_pts}\n&#34;
+            # )
+
+            data_blocks: List[_np.ndarray] = []
+
+            for i in range(num_blocks + 1):
+                if i &lt; num_blocks:
+                    self.waveform.read_start_point = 1 + i * 250000
+                    self.waveform.read_end_point = 250000 * (i + 1)
+
+                else:
+                    if last_block_pts:
+                        self.waveform.read_start_point = 1 + num_blocks * 250000
+                        self.waveform.read_end_point = num_blocks * 250000 + last_block_pts
+
+                    else:
+                        break
+                data = self.visa_ask_raw(&#39;:wav:data?&#39;, 250000)
+
+                # print(f&#34;RAW DATA RETURNED FROM SCOPE TYPE: {type(data)}&#34;)
+
+                # todo: 10MHz sine wave seems to return one less data point than the preamble indicates.
+                #  I believe this has to do with data that is only one block long not containing an end character.
+                #  further testing needed.
+                data = _np.frombuffer(data[11:-1], &#34;B&#34;)  # Last byte marks the end of the message.
+
+                data_blocks.append(data)
+
+            y_offset = -info.y_origin - info.y_reference
+
+            if len(data_blocks) == 1:
+                data_array = data_blocks[0]
+            else:
+                data_array = _np.concatenate(data_blocks, axis=None)
+
+            capture.add_waveform(
+                str(c),
+                WaveformWithContext(
+                    channel_name=str(c),
+                    data=data_array,
+                    vertical_offset=y_offset,
+                    vertical_scale=info.y_increment
+                )
+            )
+
+    return capture</code></pre>
+</details>
+</dd>
 <dt id="Rigol1000z.rigol1000z.Rigol1000z.get_channels_enabled"><code class="name flex">
 <span>def <span class="ident">get_channels_enabled</span></span>(<span>self)</span>
 </code></dt>
@@ -703,117 +906,6 @@ class Rigol1000z(Rigol1000zCommandMenu):
 </summary>
 <pre><code class="python">def get_channels_enabled(self):
     return [c.enabled() for c in self.channel_list]</code></pre>
-</details>
-</dd>
-<dt id="Rigol1000z.rigol1000z.Rigol1000z.get_data"><code class="name flex">
-<span>def <span class="ident">get_data</span></span>(<span>self, mode='NORM', filename=None)</span>
-</code></dt>
-<dd>
-<div class="desc"><p>Download the captured voltage points from the oscilloscope.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>mode</code></strong> :&ensp;<code>str</code></dt>
-<dd>'norm' if only the points on the screen should be
-downloaded, and 'raw' if all the points the ADC has captured
-should be downloaded.
-Default is 'norm'.</dd>
-<dt><strong><code>filename</code></strong> :&ensp;<code>None, str</code></dt>
-<dd>Filename the data should be saved to.
-Default
-is <code>None</code>; the data is not saved to a file.</dd>
-</dl>
-<h2 id="returns">Returns</h2>
-<p>2-tuple: A tuple of two lists.
-The first list is the time values
-and the second list is the voltage values.</p></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def get_data(self, mode=EWaveformMode.Normal, filename=None):
-    &#34;&#34;&#34;
-    Download the captured voltage points from the oscilloscope.
-
-    Args:
-        mode (str): &#39;norm&#39; if only the points on the screen should be
-            downloaded, and &#39;raw&#39; if all the points the ADC has captured
-            should be downloaded.  Default is &#39;norm&#39;.
-        filename (None, str): Filename the data should be saved to.  Default
-            is `None`; the data is not saved to a file.
-
-    Returns:
-        2-tuple: A tuple of two lists.  The first list is the time values
-            and the second list is the voltage values.
-
-    &#34;&#34;&#34;
-
-    # Stop scope to capture waveform state
-    self.stop()
-
-    # Set mode
-    assert mode in {EWaveformMode.Normal, EWaveformMode.Raw}
-    self.waveform.mode = mode
-
-    # Set transmission format
-    self.waveform.read_format = EWaveformReadFormat.Byte
-
-    # Create data structures to populate
-    time_series = None
-    all_channel_data = []
-
-    # Iterate over possible channels
-    for c in range(1, 5):
-
-        # Capture the waveform if the channel is enabled
-        if self[c].enabled:
-
-            self.waveform.source = self[c].name
-
-            # retrieve the data preable
-            info: PreambleContext = self.waveform.data_premable
-
-            # Generate the time series for the data
-            time_series = _np.arange(0, info.points * info.x_increment, info.x_increment)
-
-            max_num_pts: int = 250000
-            num_blocks: int = info.points // max_num_pts
-            last_block_pts: int = info.points % max_num_pts
-
-            datas = []
-            # print(f&#34;Data being gathered for Ch{}&#34;)
-            for i in _tqdm.tqdm(range(num_blocks + 1), ncols=60):
-                if i &lt; num_blocks:
-                    self.waveform.read_start_point = 1 + i * 250000
-                    self.waveform.read_end_point = 250000 * (i + 1)
-                else:
-                    if last_block_pts:
-                        self.waveform.read_start_point = 1 + num_blocks * 250000
-                        self.waveform.read_end_point = num_blocks * 250000 + last_block_pts
-                        sleep(0.2)
-                    else:
-                        break
-                data = self.visa_ask_raw(&#39;:wav:data?&#39;, 250000)
-
-                data = _np.frombuffer(data[11:-1], &#39;B&#39;)  # Last byte marks the end of the message.
-                datas.append(data)
-
-            # Attach each data packet received into a complete data series
-            datas = _np.concatenate(datas)
-
-            # Add the data series to the list of data series
-            all_channel_data.append(
-                (datas - info.y_origin - info.y_reference) * info.y_increment
-            )
-
-    if filename:
-        print(f&#34;writing to: {filename}&#34;)
-        try:
-            os.remove(filename)
-        except OSError:
-            pass
-        _np.savetxt(filename, _np.column_stack((time_series, *all_channel_data)), &#39;%.12e&#39;, &#39;, &#39;, &#39;\n&#39;)
-
-    return time_series, all_channel_data</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.rigol1000z.Rigol1000z.get_screenshot"><code class="name flex">
@@ -955,8 +1047,8 @@ extension should be included (i.e. jpg, png, bmp or tif).</dd>
 <li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.display" href="#Rigol1000z.rigol1000z.Rigol1000z.display">display</a></code></li>
 <li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.event_tables" href="#Rigol1000z.rigol1000z.Rigol1000z.event_tables">event_tables</a></code></li>
 <li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.force" href="#Rigol1000z.rigol1000z.Rigol1000z.force">force</a></code></li>
+<li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.get_capture" href="#Rigol1000z.rigol1000z.Rigol1000z.get_capture">get_capture</a></code></li>
 <li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.get_channels_enabled" href="#Rigol1000z.rigol1000z.Rigol1000z.get_channels_enabled">get_channels_enabled</a></code></li>
-<li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.get_data" href="#Rigol1000z.rigol1000z.Rigol1000z.get_data">get_data</a></code></li>
 <li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.get_screenshot" href="#Rigol1000z.rigol1000z.Rigol1000z.get_screenshot">get_screenshot</a></code></li>
 <li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.ieee488" href="#Rigol1000z.rigol1000z.Rigol1000z.ieee488">ieee488</a></code></li>
 <li><code><a title="Rigol1000z.rigol1000z.Rigol1000z.measure" href="#Rigol1000z.rigol1000z.Rigol1000z.measure">measure</a></code></li>

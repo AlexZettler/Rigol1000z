@@ -10,6 +10,7 @@ pyvisa = "*"
 pyvisa-py = "*"
 "pdoc3" = "*"
 matplotlib = "*"
+mypy = "*"
 
 [dev-packages]
 

@@ -35,14 +35,16 @@ class Channel(Rigol1000zCommandMenu):
     @property
     def bw_limit_20mhz(self):
         resp = self.visa_ask(':bwl?')
+        # print(f"bw_limit_20mhz resp: {resp}")
         return resp == "20M"
 
     @bw_limit_20mhz.setter
     def bw_limit_20mhz(self, val: bool):
+        # print(f"bw_limit_20mhz: {val}")
         self.visa_write(f':bwl {"20M" if val else "OFF"}')
 
     @property
-    def coupling(self):
+    def coupling(self):  # todo: create enum for this
         return self.visa_ask(':coup?')
 
     @coupling.setter
@@ -96,7 +98,7 @@ class Channel(Rigol1000zCommandMenu):
 
     @range_v.setter
     def range_v(self, val: float):
-        assert 8e-3 <= val <= 800.
+        assert 8e-3 <= val <= 800.0
         self.visa_write(f':rang {val:.4e}')
 
     @property
@@ -2541,7 +2543,7 @@ class PreambleContext:
     """
 
     def __init__(self, preamble_str):
-        print(f"preamble_str: {preamble_str}")
+        # print(f"preamble_str: {preamble_str}")
 
         pre = preamble_str.split(',')
 

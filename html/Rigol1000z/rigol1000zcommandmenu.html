@@ -31,8 +31,9 @@
 This module contains menu hierarchy abstractions.
 &#34;&#34;&#34;
 
-import pyvisa as _visa
+import pyvisa as _visa  # type: ignore
 from Rigol1000z.constants import *
+from typing import Optional, Union
 
 
 class CommandMenu:
@@ -49,16 +50,17 @@ class CommandMenu:
     def __init__(self, visa_resource: _visa.Resource):
         self.visa_resource: _visa.Resource = visa_resource
 
-    def visa_write(self, cmd: str):
+    def visa_write(self, cmd: str) -&gt; None:
         self.visa_resource.write(self.cmd_hierarchy_str + cmd)
+        return None
 
     def visa_read(self) -&gt; str:
         return self.visa_resource.read().strip()
 
-    def visa_read_raw(self, num_bytes: int = -1):
+    def visa_read_raw(self, num_bytes: int = -1) -&gt; bytes:
         return self.visa_resource.read_raw(num_bytes)
 
-    def visa_ask(self, cmd: str):
+    def visa_ask(self, cmd: str) -&gt; str:
         return self.visa_resource.query(self.cmd_hierarchy_str + cmd)
 
     def visa_ask_raw(self, cmd: str, num_bytes: int = -1):
@@ -71,15 +73,15 @@ class Rigol1000zCommandMenu(CommandMenu):
     Adds additional checks and features exclusive to the Rigol1000z series of scopes
     &#34;&#34;&#34;
 
-    def __init__(self, visa_resource, idn: str = None):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str] = &#34;&#34;):
         super().__init__(visa_resource)
 
-        if (idn is not None) and (type(idn) is str):
-            self._idn_cache: str = idn
-
+        # Cache the device&#39;s identifier
+        self._idn_cache: str
+        if (idn != &#34;&#34;) and (type(idn) is str):
+            self._idn_cache = str(idn)
         else:
-            # Cache the device&#39;s identifier
-            self._idn_cache: str = self.visa_resource.query(&#34;*IDN?&#34;)
+            self._idn_cache = str(self.visa_resource.query(&#34;*IDN?&#34;))
 
     @property
     def osc_model(self) -&gt; str:
@@ -191,16 +193,17 @@ Adds a common pre-command branch string in order to ease writing of menus</p></d
     def __init__(self, visa_resource: _visa.Resource):
         self.visa_resource: _visa.Resource = visa_resource
 
-    def visa_write(self, cmd: str):
+    def visa_write(self, cmd: str) -&gt; None:
         self.visa_resource.write(self.cmd_hierarchy_str + cmd)
+        return None
 
     def visa_read(self) -&gt; str:
         return self.visa_resource.read().strip()
 
-    def visa_read_raw(self, num_bytes: int = -1):
+    def visa_read_raw(self, num_bytes: int = -1) -&gt; bytes:
         return self.visa_resource.read_raw(num_bytes)
 
-    def visa_ask(self, cmd: str):
+    def visa_ask(self, cmd: str) -&gt; str:
         return self.visa_resource.query(self.cmd_hierarchy_str + cmd)
 
     def visa_ask_raw(self, cmd: str, num_bytes: int = -1):
@@ -221,7 +224,7 @@ Adds a common pre-command branch string in order to ease writing of menus</p></d
 <h3>Methods</h3>
 <dl>
 <dt id="Rigol1000z.rigol1000zcommandmenu.CommandMenu.visa_ask"><code class="name flex">
-<span>def <span class="ident">visa_ask</span></span>(<span>self, cmd: str)</span>
+<span>def <span class="ident">visa_ask</span></span>(<span>self, cmd: str) ‑> str</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -229,7 +232,7 @@ Adds a common pre-command branch string in order to ease writing of menus</p></d
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def visa_ask(self, cmd: str):
+<pre><code class="python">def visa_ask(self, cmd: str) -&gt; str:
     return self.visa_resource.query(self.cmd_hierarchy_str + cmd)</code></pre>
 </details>
 </dd>
@@ -261,7 +264,7 @@ Adds a common pre-command branch string in order to ease writing of menus</p></d
 </details>
 </dd>
 <dt id="Rigol1000z.rigol1000zcommandmenu.CommandMenu.visa_read_raw"><code class="name flex">
-<span>def <span class="ident">visa_read_raw</span></span>(<span>self, num_bytes: int = -1)</span>
+<span>def <span class="ident">visa_read_raw</span></span>(<span>self, num_bytes: int = -1) ‑> bytes</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -269,12 +272,12 @@ Adds a common pre-command branch string in order to ease writing of menus</p></d
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def visa_read_raw(self, num_bytes: int = -1):
+<pre><code class="python">def visa_read_raw(self, num_bytes: int = -1) -&gt; bytes:
     return self.visa_resource.read_raw(num_bytes)</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.rigol1000zcommandmenu.CommandMenu.visa_write"><code class="name flex">
-<span>def <span class="ident">visa_write</span></span>(<span>self, cmd: str)</span>
+<span>def <span class="ident">visa_write</span></span>(<span>self, cmd: str) ‑> NoneType</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -282,15 +285,16 @@ Adds a common pre-command branch string in order to ease writing of menus</p></d
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def visa_write(self, cmd: str):
-    self.visa_resource.write(self.cmd_hierarchy_str + cmd)</code></pre>
+<pre><code class="python">def visa_write(self, cmd: str) -&gt; None:
+    self.visa_resource.write(self.cmd_hierarchy_str + cmd)
+    return None</code></pre>
 </details>
 </dd>
 </dl>
 </dd>
 <dt id="Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu"><code class="flex name class">
 <span>class <span class="ident">Rigol1000zCommandMenu</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -303,15 +307,15 @@ Adds a common pre-command branch string in order to ease writing of menus</p></d
     Adds additional checks and features exclusive to the Rigol1000z series of scopes
     &#34;&#34;&#34;
 
-    def __init__(self, visa_resource, idn: str = None):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str] = &#34;&#34;):
         super().__init__(visa_resource)
 
-        if (idn is not None) and (type(idn) is str):
-            self._idn_cache: str = idn
-
+        # Cache the device&#39;s identifier
+        self._idn_cache: str
+        if (idn != &#34;&#34;) and (type(idn) is str):
+            self._idn_cache = str(idn)
         else:
-            # Cache the device&#39;s identifier
-            self._idn_cache: str = self.visa_resource.query(&#34;*IDN?&#34;)
+            self._idn_cache = str(self.visa_resource.query(&#34;*IDN?&#34;))
 
     @property
     def osc_model(self) -&gt; str:

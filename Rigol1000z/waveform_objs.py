@@ -2,10 +2,17 @@
 from typing import List, Tuple, Dict
 from datetime import datetime
 from decimal import Decimal, Context
+import sys
 
 # pip libraries
 import numpy as _np  # type: ignore
-import plotly.graph_objects as go  # type: ignore
+
+# Optional import of plotly which enables graphing functions directly from Capture and WaveformWithContext objects
+plotly = None
+try:
+    import plotly  # type: ignore
+except ImportError:
+    plotly = None
 
 # packages from this library
 from Rigol1000z.sql_integration.sql_commands import db
@@ -59,17 +66,22 @@ class WaveformWithContext:
         )
 
     def view_graph_plotly(self, waveform_period: float):
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=_np.linspace(start=0.0, stop=waveform_period, num=len(self), dtype='f'),
-                y=self.to_float_amplitude_array(),
-                name=self.channel_name,
-                line=dict(width=4)
-            )
-        )
-        fig.show()
-
+        if 'plotly' in sys.modules:
+            try:
+                fig = plotly.graph_objects.Figure()
+                fig.add_trace(
+                    plotly.graph_objects.Scatter(
+                        x=_np.linspace(start=0.0, stop=waveform_period, num=len(self), dtype='f'),
+                        y=self.to_float_amplitude_array(),
+                        name=self.channel_name,
+                        line=dict(width=4)
+                    )
+                )
+                fig.show()
+            except AttributeError as e:
+                raise e
+        else:
+            raise NotImplementedError(f'You have not imported the plotly module')
 
 class Capture:
     """
@@ -91,17 +103,21 @@ class Capture:
         return _np.linspace(start=0.0, stop=self.period, num=data_points, dtype='f')
 
     def view_graph_plotly(self):
-        fig = go.Figure()
-        for k, v in self.waveforms.items():
-            fig.add_trace(
-                go.Scatter(
-                    x=self.to_timebase(len(v)),
-                    y=v.to_float_amplitude_array(),
-                    name=k,
-                    line=dict(width=4)
+
+        if 'plotly' in sys.modules:
+            fig = plotly.graph_objects.Figure()
+            for k, v in self.waveforms.items():
+                fig.add_trace(
+                    plotly.graph_objects.Scatter(
+                        x=self.to_timebase(len(v)),
+                        y=v.to_float_amplitude_array(),
+                        name=k,
+                        line=dict(width=4)
+                    )
                 )
-            )
-        fig.show()
+            fig.show()
+        else:
+            raise NotImplementedError(f'You have not imported the plotly module')
 
     def write_to_db(self) -> int:
 

@@ -1,22 +1,21 @@
 # Rigol1000z
-Python library to interface with Rigol DS1000z series oscilloscopes.
+Python library for interfacing with [Rigol's DS1000z](https://www.rigolna.com/products/digital-oscilloscopes/1000z/) series of oscilloscopes.
 
 ## Features
-* Capture and Waveform objects
-    * Builtin graphing function
-    * SQLite database writing/reading for use in testing that requires a large number of waveforms to be captured
-* 
-* Uses the VISA communication protocol implemented in (PyVISA) and supports both USB and Ethernet.
-
-## Platforms
-* Windows 10 - Tested
-* ArchLinux - when forked, [@jeanyvesb9](https://github.com/jeanyvesb9/Rigol1000z) stated his version worked with Arch, so I suspect compatibility.
+* Uses the VISA communication protocol implemented in ([PyVISA]((https://github.com/pyvisa/pyvisa))) which supports both USB and Ethernet communication protocols.
+* Capture and Waveform objects with:
+    * Builtin graphing functions.
+    * SQLite database writing/reading for use in testing that requires a large number of waveforms to be captured.
 
 ## Dependencies
-* [python3.7](https://www.python.org/downloads/release)+ Python version as f-strings are used in the library
+* [python3.7+](https://www.python.org/downloads/release) Python version as f-strings are used in the library
 * [numpy](https://github.com/numpy/numpy) Library for efficient storage and processing of arrays
 * [pyvisa](https://github.com/pyvisa/pyvisa) Visa communication protocol
 * [tqdm](https://github.com/tqdm/tqdm) Command line progress bar
+
+## Optional Dependencies
+* [plotly](https://pypi.org/project/plotly/) - graphing library
+* [matplotlib](https://pypi.org/project/matplotlib/) - graphing library
 
 ## Recommended
 * [pipenv](https://pypi.org/project/pipenv/)
@@ -27,6 +26,10 @@ To install run the following commands from your working directory
 pip install pipenv
 pipenv install
 ```
+
+## Platforms
+* Windows 10 - Tested
+* ArchLinux - when forked, [@jeanyvesb9](https://github.com/jeanyvesb9/Rigol1000z) stated his version worked with Arch, so I suspect compatibility.
 
 ## Example
 ```python

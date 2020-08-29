@@ -32,12 +32,14 @@ This module contains definitions for command menus of the Rigol1000z series of o
 &#34;&#34;&#34;
 
 import os
-import numpy as _np
-import tqdm as _tqdm
-import pyvisa as _visa
+import numpy as _np  # type: ignore
+import tqdm as _tqdm  # type: ignore
+import pyvisa as _visa  # type: ignore
 from Rigol1000z.rigol1000zcommandmenu import Rigol1000zCommandMenu
 from Rigol1000z.constants import *
-from typing import List, Union, Iterable
+from typing import List, Union, Iterable, Set, Tuple, Dict, Optional
+import itertools
+from decimal import Decimal, Context
 
 
 class Channel(Rigol1000zCommandMenu):
@@ -62,14 +64,16 @@ class Channel(Rigol1000zCommandMenu):
     @property
     def bw_limit_20mhz(self):
         resp = self.visa_ask(&#39;:bwl?&#39;)
+        # print(f&#34;bw_limit_20mhz resp: {resp}&#34;)
         return resp == &#34;20M&#34;
 
     @bw_limit_20mhz.setter
     def bw_limit_20mhz(self, val: bool):
+        # print(f&#34;bw_limit_20mhz: {val}&#34;)
         self.visa_write(f&#39;:bwl {&#34;20M&#34; if val else &#34;OFF&#34;}&#39;)
 
     @property
-    def coupling(self):
+    def coupling(self):  # todo: create enum for this
         return self.visa_ask(&#39;:coup?&#39;)
 
     @coupling.setter
@@ -123,7 +127,7 @@ class Channel(Rigol1000zCommandMenu):
 
     @range_v.setter
     def range_v(self, val: float):
-        assert 8e-3 &lt;= val &lt;= 800.
+        assert 8e-3 &lt;= val &lt;= 800.0
         self.visa_write(f&#39;:rang {val:.4e}&#39;)
 
     @property
@@ -246,17 +250,17 @@ class Acquire(Rigol1000zCommandMenu):
 
         num_enabled_chans = sum(1 if c.enabled else 0 for c in self._linked_channels)
 
-        val = int(val) if val != -1 else &#39;AUTO&#39;
+        str_val: str = str(val) if val != -1 else &#39;AUTO&#39;
 
         if num_enabled_chans == 1:
-            assert val in (&#39;AUTO&#39;, 12000, 120000, 1200000, 12000000, 24000000)
+            assert str_val in (&#39;AUTO&#39;, 12000, 120000, 1200000, 12000000, 24000000)
         elif num_enabled_chans == 2:
-            assert val in (&#39;AUTO&#39;, 6000, 60000, 600000, 6000000, 12000000)
+            assert str_val in (&#39;AUTO&#39;, 6000, 60000, 600000, 6000000, 12000000)
         elif num_enabled_chans in (3, 4):
-            assert val in (&#39;AUTO&#39;, 3000, 30000, 300000, 3000000, 6000000)
+            assert str_val in (&#39;AUTO&#39;, 3000, 30000, 300000, 3000000, 6000000)
 
         # todo: set to run mode if required
-        self.visa_write(f&#39;:mdep {val}&#39;)
+        self.visa_write(f&#39;:mdep {str_val}&#39;)
 
     @property
     def mode(self):
@@ -493,7 +497,7 @@ class EventTable(Rigol1000zCommandMenu):
         :return:
         &#34;&#34;&#34;
 
-        return self.visa_ask(&#39;:row?&#39;)
+        return int(self.visa_ask(&#39;:row?&#39;))
 
     @row.setter
     def row(self, val: int):
@@ -523,7 +527,7 @@ class EventTable(Rigol1000zCommandMenu):
         &#34;&#34;&#34;
         self.visa_write(f&#39;:sort {&#34;DESC&#34; if val else &#34;ASC&#34;}&#39;)
 
-    def get_data(self) -&gt; any:
+    def get_data(self):
         # todo: test and expand this when I have test data to work with
         return self.visa_ask(&#39;:data?&#39;)
 
@@ -531,6 +535,14 @@ class EventTable(Rigol1000zCommandMenu):
 # incomplete
 class Function(Rigol1000zCommandMenu):
     cmd_hierarchy_str = &#34;:func&#34;
+
+    @property
+    def beep_on_record(self) -&gt; bool:
+        return self.visa_ask(f&#34;:WREC:PROM?&#34;) == &#34;1&#34;
+
+    @beep_on_record.setter
+    def beep_on_record(self, val: bool):
+        self.visa_write(f&#34;:WREC:PROM {&#39;1&#39; if val else &#39;0&#39;}&#34;)
 
 
 class IEEE488(Rigol1000zCommandMenu):
@@ -709,7 +721,7 @@ class MeasureSetup(Rigol1000zCommandMenu):
 
         :return:
         &#34;&#34;&#34;
-        return float(round(self.visa_ask(f&#39;:max?&#39;))) / 100.0
+        return float(self.visa_ask(f&#39;:max?&#39;)) / 100.0
 
     @max.setter
     def max(self, val: float):
@@ -730,7 +742,7 @@ class MeasureSetup(Rigol1000zCommandMenu):
 
         :return:
         &#34;&#34;&#34;
-        return float(round(self.visa_ask(f&#39;:mid?&#39;))) / 100.0
+        return float(self.visa_ask(f&#39;:mid?&#39;)) / 100.0
 
     @max.setter
     def mid(self, val: float):
@@ -751,7 +763,7 @@ class MeasureSetup(Rigol1000zCommandMenu):
 
         :return:
         &#34;&#34;&#34;
-        return float(round(self.visa_ask(f&#39;:mid?&#39;))) / 100.0
+        return float(self.visa_ask(f&#39;:mid?&#39;)) / 100.0
 
     @max.setter
     def min(self, val: float):
@@ -1549,9 +1561,9 @@ class MeasurementStatisticItem(Rigol1000zCommandMenu):
 class MeasurementStatistic(Rigol1000zCommandMenu):
     cmd_hierarchy_str = &#34;:meas:stat&#34;
 
-    def __init__(self, visa_resource: _visa.Resource, idn: str):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str]):
         super().__init__(visa_resource, idn)
-        self.item = MeasurementStatisticItem(visa_resource, idn)
+        self.item: MeasurementStatisticItem = MeasurementStatisticItem(visa_resource, idn)
 
     @property
     def enabled(self) -&gt; bool:
@@ -1607,10 +1619,6 @@ class MeasurementStatistic(Rigol1000zCommandMenu):
         :return:
         &#34;&#34;&#34;
         self.visa_write(&#39;:res&#39;)
-
-    def item(self):
-        pass
-        # todo: what the fuck is item (pg 145)
 
 
 class MeasurementItem(Rigol1000zCommandMenu):
@@ -2260,7 +2268,7 @@ class Measure(Rigol1000zCommandMenu):
     &#34;&#34;&#34;
     cmd_hierarchy_str = &#34;:meas&#34;
 
-    def __init__(self, visa_resource: _visa.Resource, idn: str = None):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str] = &#34;&#34;):
         super().__init__(visa_resource, idn)
 
         self.counter = MeasureCounter(visa_resource, idn)
@@ -2391,6 +2399,14 @@ class Storage(Rigol1000zCommandMenu):
 class System(Rigol1000zCommandMenu):
     cmd_hierarchy_str = &#34;:syst&#34;
 
+    @property
+    def beep_enabled(self) -&gt; bool:
+        return self.visa_ask(f&#34;:BEEP?&#34;) == &#34;1&#34;
+
+    @beep_enabled.setter
+    def beep_enabled(self, val: bool):
+        self.visa_write(f&#34;:BEEP {&#39;1&#39; if val else &#39;0&#39;}&#34;)
+
 
 # incomplete
 class Trace(Rigol1000zCommandMenu):
@@ -2449,6 +2465,20 @@ class Timebase(Rigol1000zCommandMenu):
         self.delay = TimebaseDelay(visa_resource)
 
     @property
+    def scale_options(self) -&gt; Set[float]:
+        &#34;&#34;&#34;
+        YT mode:  5ns/div to 50s/div in 1-2-5 step
+
+        Roll mode(not supported here): 200ms/div to 50s/div in   1-2-5 ste
+
+        :return:
+        &#34;&#34;&#34;
+        return {
+            5 * 10 ** -9,  # Minimum value does not span magnitude order
+            *{v[0] * 10 ** v[1] for v in itertools.product({1, 2, 5}, range(-8, 1, 1))}
+        }
+
+    @property
     def scale(self):
         &#34;&#34;&#34;
         Query the main timebase scale. The default unit is s/div.
@@ -2464,7 +2494,7 @@ class Timebase(Rigol1000zCommandMenu):
         :param val:
         :return:
         &#34;&#34;&#34;
-        assert 50e-9 &lt;= val &lt;= 50
+        assert 4.99e-9 &lt;= val &lt;= 50.01
         self.visa_write(f&#39;:scal {val:.4e}&#39;)
 
     @property
@@ -2489,15 +2519,15 @@ class Timebase(Rigol1000zCommandMenu):
         self.visa_write(f&#39;:mode {val}&#39;)
 
     @property
-    def offset(self):
+    def offset(self) -&gt; float:
         &#34;&#34;&#34;
         Query the main timebase offset. The default unit is s.
         :return:
         &#34;&#34;&#34;
-        return self.visa_ask(&#39;:offs?&#39;)
+        return float(self.visa_ask(&#39;:offs?&#39;))
 
     @offset.setter
-    def offset(self, val):
+    def offset(self, val: float):
         &#34;&#34;&#34;
         Set the main timebase offset. The default unit is s.
         :param val:
@@ -2511,11 +2541,11 @@ class TriggerEdge(Rigol1000zCommandMenu):
     cmd_hierarchy_str = &#34;:trig:edg&#34;
 
     @property
-    def trigger_level_v(self):
-        return self.visa_ask(&#39;:lev?&#39;)
+    def trigger_level_v(self) -&gt; float:
+        return float(self.visa_ask(&#39;:lev?&#39;))
 
     @trigger_level_v.setter
-    def trigger_level_v(self, level):
+    def trigger_level_v(self, level: float):
         self.visa_write(f&#39;:lev {level:.3e}&#39;)
 
 
@@ -2528,13 +2558,12 @@ class Trigger(Rigol1000zCommandMenu):
         self.edge = TriggerEdge(visa_resource)
 
     @property
-    def trigger_holdoff_s(self):
-        return self.visa_ask(&#39;:hold?&#39;)
+    def trigger_holdoff_s(self) -&gt; float:
+        return float(self.visa_ask(&#39;:hold?&#39;))
 
     @trigger_holdoff_s.setter
-    def trigger_holdoff_s(self, holdoff):
-        self.visa_write(&#39;:hold %.3e&#39; % holdoff)
-        return self.get_trigger_holdoff_s()
+    def trigger_holdoff_s(self, holdoff: float):
+        self.visa_write(f&#34;:hold {holdoff:.3e}&#34;)
 
 
 class PreambleContext:
@@ -2543,18 +2572,29 @@ class PreambleContext:
     &#34;&#34;&#34;
 
     def __init__(self, preamble_str):
+        # print(f&#34;preamble_str: {preamble_str}&#34;)
+
         pre = preamble_str.split(&#39;,&#39;)
 
+        # Meta params
         self.format: int = int(pre[0])
         self.type: int = int(pre[1])
+
+        # Length Params
         self.points: int = int(pre[2])
         self.count: int = int(pre[3])
-        self.x_increment: float = float(pre[4])
+
+        # X params
+        self.x_increment: Decimal = Decimal(pre[4])  # Capture this as a decimal to store more significant digits
         self.x_origin: float = float(pre[5])
-        self.x_reference: float = float(pre[6])
-        self.y_increment: float = float(pre[7])
-        self.y_origin: float = float(pre[8])
-        self.y_reference: float = float(pre[9])
+        self.x_reference: int = int(pre[6])
+        assert self.x_reference == 0  # Should always return 0
+
+        # Y params
+        self.y_increment: str = str(pre[7])  # This should be stored as a string and read as a decimal
+        self.y_origin: int = int(pre[8])
+        self.y_reference: int = int(pre[9])
+        # assert self.y_reference == 127  # Should always return 0
 
 
 class Waveform(Rigol1000zCommandMenu):
@@ -2611,7 +2651,7 @@ class Waveform(Rigol1000zCommandMenu):
         return float(self.visa_ask(&#39;:xinc?&#39;))
 
     @property
-    def y_increment(self) -&gt; float:
+    def y_increment(self) -&gt; Decimal:
         &#34;&#34;&#34;
         Query the waveform increment of the specified channel source in the Y direction.
         The unit is the same as the current amplitude unit.
@@ -2634,7 +2674,7 @@ class Waveform(Rigol1000zCommandMenu):
 
         :return:
         &#34;&#34;&#34;
-        return float(self.visa_ask(&#39;:yinc?&#39;))
+        return Decimal(self.visa_ask(&#39;:yinc?&#39;))
 
     @property
     def x_origin(self) -&gt; float:
@@ -2741,10 +2781,7 @@ class Waveform(Rigol1000zCommandMenu):
         Get information about oscilloscope axes.
         &#34;&#34;&#34;
         raw_pre = self.visa_ask(&#39;:pre?&#39;)
-        return PreambleContext(raw_pre)
-
-    # todo: review get is data handled directly from the Rigol class.
-    #  Make sure this makes sense because this violates the pattern taken by the rest of the menus</code></pre>
+        return PreambleContext(raw_pre)</code></pre>
 </details>
 </section>
 <section>
@@ -2823,17 +2860,17 @@ class Waveform(Rigol1000zCommandMenu):
 
         num_enabled_chans = sum(1 if c.enabled else 0 for c in self._linked_channels)
 
-        val = int(val) if val != -1 else &#39;AUTO&#39;
+        str_val: str = str(val) if val != -1 else &#39;AUTO&#39;
 
         if num_enabled_chans == 1:
-            assert val in (&#39;AUTO&#39;, 12000, 120000, 1200000, 12000000, 24000000)
+            assert str_val in (&#39;AUTO&#39;, 12000, 120000, 1200000, 12000000, 24000000)
         elif num_enabled_chans == 2:
-            assert val in (&#39;AUTO&#39;, 6000, 60000, 600000, 6000000, 12000000)
+            assert str_val in (&#39;AUTO&#39;, 6000, 60000, 600000, 6000000, 12000000)
         elif num_enabled_chans in (3, 4):
-            assert val in (&#39;AUTO&#39;, 3000, 30000, 300000, 3000000, 6000000)
+            assert str_val in (&#39;AUTO&#39;, 3000, 30000, 300000, 3000000, 6000000)
 
         # todo: set to run mode if required
-        self.visa_write(f&#39;:mdep {val}&#39;)
+        self.visa_write(f&#39;:mdep {str_val}&#39;)
 
     @property
     def mode(self):
@@ -2973,7 +3010,7 @@ def sampling_rate(self):
 </dd>
 <dt id="Rigol1000z.commands.Calibrate"><code class="flex name class">
 <span>class <span class="ident">Calibrate</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Complete</p></div>
@@ -3056,14 +3093,16 @@ def sampling_rate(self):
     @property
     def bw_limit_20mhz(self):
         resp = self.visa_ask(&#39;:bwl?&#39;)
+        # print(f&#34;bw_limit_20mhz resp: {resp}&#34;)
         return resp == &#34;20M&#34;
 
     @bw_limit_20mhz.setter
     def bw_limit_20mhz(self, val: bool):
+        # print(f&#34;bw_limit_20mhz: {val}&#34;)
         self.visa_write(f&#39;:bwl {&#34;20M&#34; if val else &#34;OFF&#34;}&#39;)
 
     @property
-    def coupling(self):
+    def coupling(self):  # todo: create enum for this
         return self.visa_ask(&#39;:coup?&#39;)
 
     @coupling.setter
@@ -3117,7 +3156,7 @@ def sampling_rate(self):
 
     @range_v.setter
     def range_v(self, val: float):
-        assert 8e-3 &lt;= val &lt;= 800.
+        assert 8e-3 &lt;= val &lt;= 800.0
         self.visa_write(f&#39;:rang {val:.4e}&#39;)
 
     @property
@@ -3199,6 +3238,7 @@ def sampling_rate(self):
 <pre><code class="python">@property
 def bw_limit_20mhz(self):
     resp = self.visa_ask(&#39;:bwl?&#39;)
+    # print(f&#34;bw_limit_20mhz resp: {resp}&#34;)
     return resp == &#34;20M&#34;</code></pre>
 </details>
 </dd>
@@ -3242,7 +3282,7 @@ def channel(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def coupling(self):
+def coupling(self):  # todo: create enum for this
     return self.visa_ask(&#39;:coup?&#39;)</code></pre>
 </details>
 </dd>
@@ -3369,7 +3409,7 @@ def vernier(self):
 </dd>
 <dt id="Rigol1000z.commands.Cursor"><code class="flex name class">
 <span>class <span class="ident">Cursor</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -3399,7 +3439,7 @@ def vernier(self):
 </dd>
 <dt id="Rigol1000z.commands.Decoder"><code class="flex name class">
 <span>class <span class="ident">Decoder</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -3429,7 +3469,7 @@ def vernier(self):
 </dd>
 <dt id="Rigol1000z.commands.Display"><code class="flex name class">
 <span>class <span class="ident">Display</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Complete</p></div>
@@ -3745,7 +3785,7 @@ def persistence_time(self):
         :return:
         &#34;&#34;&#34;
 
-        return self.visa_ask(&#39;:row?&#39;)
+        return int(self.visa_ask(&#39;:row?&#39;))
 
     @row.setter
     def row(self, val: int):
@@ -3775,7 +3815,7 @@ def persistence_time(self):
         &#34;&#34;&#34;
         self.visa_write(f&#39;:sort {&#34;DESC&#34; if val else &#34;ASC&#34;}&#39;)
 
-    def get_data(self) -&gt; any:
+    def get_data(self):
         # todo: test and expand this when I have test data to work with
         return self.visa_ask(&#39;:data?&#39;)</code></pre>
 </details>
@@ -3868,7 +3908,7 @@ def row(self) -&gt; int:
     :return:
     &#34;&#34;&#34;
 
-    return self.visa_ask(&#39;:row?&#39;)</code></pre>
+    return int(self.visa_ask(&#39;:row?&#39;))</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.commands.EventTable.view"><code class="name">var <span class="ident">view</span> : str</code></dt>
@@ -3887,7 +3927,7 @@ def view(self) -&gt; str:
 <h3>Methods</h3>
 <dl>
 <dt id="Rigol1000z.commands.EventTable.get_data"><code class="name flex">
-<span>def <span class="ident">get_data</span></span>(<span>self) ‑> <built-in function any></span>
+<span>def <span class="ident">get_data</span></span>(<span>self)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -3895,7 +3935,7 @@ def view(self) -&gt; str:
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def get_data(self) -&gt; any:
+<pre><code class="python">def get_data(self):
     # todo: test and expand this when I have test data to work with
     return self.visa_ask(&#39;:data?&#39;)</code></pre>
 </details>
@@ -3915,7 +3955,7 @@ def view(self) -&gt; str:
 </dd>
 <dt id="Rigol1000z.commands.Function"><code class="flex name class">
 <span>class <span class="ident">Function</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -3924,13 +3964,36 @@ def view(self) -&gt; str:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class Function(Rigol1000zCommandMenu):
-    cmd_hierarchy_str = &#34;:func&#34;</code></pre>
+    cmd_hierarchy_str = &#34;:func&#34;
+
+    @property
+    def beep_on_record(self) -&gt; bool:
+        return self.visa_ask(f&#34;:WREC:PROM?&#34;) == &#34;1&#34;
+
+    @beep_on_record.setter
+    def beep_on_record(self, val: bool):
+        self.visa_write(f&#34;:WREC:PROM {&#39;1&#39; if val else &#39;0&#39;}&#34;)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu" href="rigol1000zcommandmenu.html#Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu">Rigol1000zCommandMenu</a></li>
 <li><a title="Rigol1000z.rigol1000zcommandmenu.CommandMenu" href="rigol1000zcommandmenu.html#Rigol1000z.rigol1000zcommandmenu.CommandMenu">CommandMenu</a></li>
 </ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="Rigol1000z.commands.Function.beep_on_record"><code class="name">var <span class="ident">beep_on_record</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def beep_on_record(self) -&gt; bool:
+    return self.visa_ask(f&#34;:WREC:PROM?&#34;) == &#34;1&#34;</code></pre>
+</details>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu" href="rigol1000zcommandmenu.html#Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu">Rigol1000zCommandMenu</a></b></code>:
@@ -3945,7 +4008,7 @@ def view(self) -&gt; str:
 </dd>
 <dt id="Rigol1000z.commands.IEEE488"><code class="flex name class">
 <span>class <span class="ident">IEEE488</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Complete</p></div>
@@ -4229,7 +4292,7 @@ current command has been executed.</p></div>
 </dd>
 <dt id="Rigol1000z.commands.LA"><code class="flex name class">
 <span>class <span class="ident">LA</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>The :LA commands are used to perform the related operations on the digital channels. These commands
@@ -4265,7 +4328,7 @@ are only applicable to DS1000Z Plus with the MSO upgrade option.</p></div>
 </dd>
 <dt id="Rigol1000z.commands.LAN"><code class="flex name class">
 <span>class <span class="ident">LAN</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -4295,7 +4358,7 @@ are only applicable to DS1000Z Plus with the MSO upgrade option.</p></div>
 </dd>
 <dt id="Rigol1000z.commands.Mask"><code class="flex name class">
 <span>class <span class="ident">Mask</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>The :MASK commands are used to set and query the pass/fail test parameters.</p></div>
@@ -4328,7 +4391,7 @@ are only applicable to DS1000Z Plus with the MSO upgrade option.</p></div>
 </dd>
 <dt id="Rigol1000z.commands.Math"><code class="flex name class">
 <span>class <span class="ident">Math</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -4358,7 +4421,7 @@ are only applicable to DS1000Z Plus with the MSO upgrade option.</p></div>
 </dd>
 <dt id="Rigol1000z.commands.Measure"><code class="flex name class">
 <span>class <span class="ident">Measure</span></span>
-<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>DS1000Z supports the auto measurement of the following 37 waveform parameters and provides the
@@ -4380,7 +4443,7 @@ statistic function for the measurement results.</p>
     &#34;&#34;&#34;
     cmd_hierarchy_str = &#34;:meas&#34;
 
-    def __init__(self, visa_resource: _visa.Resource, idn: str = None):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str] = &#34;&#34;):
         super().__init__(visa_resource, idn)
 
         self.counter = MeasureCounter(visa_resource, idn)
@@ -4620,7 +4683,7 @@ Pass -1 to recover all</p>
 </dd>
 <dt id="Rigol1000z.commands.MeasureCounter"><code class="flex name class">
 <span>class <span class="ident">MeasureCounter</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Complete</p></div>
@@ -4724,7 +4787,7 @@ def value(self) -&gt; float:
 </dd>
 <dt id="Rigol1000z.commands.MeasureSetup"><code class="flex name class">
 <span>class <span class="ident">MeasureSetup</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Complete</p></div>
@@ -4746,7 +4809,7 @@ def value(self) -&gt; float:
 
         :return:
         &#34;&#34;&#34;
-        return float(round(self.visa_ask(f&#39;:max?&#39;))) / 100.0
+        return float(self.visa_ask(f&#39;:max?&#39;)) / 100.0
 
     @max.setter
     def max(self, val: float):
@@ -4767,7 +4830,7 @@ def value(self) -&gt; float:
 
         :return:
         &#34;&#34;&#34;
-        return float(round(self.visa_ask(f&#39;:mid?&#39;))) / 100.0
+        return float(self.visa_ask(f&#39;:mid?&#39;)) / 100.0
 
     @max.setter
     def mid(self, val: float):
@@ -4788,7 +4851,7 @@ def value(self) -&gt; float:
 
         :return:
         &#34;&#34;&#34;
-        return float(round(self.visa_ask(f&#39;:mid?&#39;))) / 100.0
+        return float(self.visa_ask(f&#39;:mid?&#39;)) / 100.0
 
     @max.setter
     def min(self, val: float):
@@ -4963,7 +5026,7 @@ def max(self) -&gt; float:
 
     :return:
     &#34;&#34;&#34;
-    return float(round(self.visa_ask(f&#39;:max?&#39;))) / 100.0</code></pre>
+    return float(self.visa_ask(f&#39;:max?&#39;)) / 100.0</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.commands.MeasureSetup.mid"><code class="name">var <span class="ident">mid</span> : float</code></dt>
@@ -4983,7 +5046,7 @@ def max(self) -&gt; float:
 
     :return:
     &#34;&#34;&#34;
-    return float(round(self.visa_ask(f&#39;:max?&#39;))) / 100.0</code></pre>
+    return float(self.visa_ask(f&#39;:max?&#39;)) / 100.0</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.commands.MeasureSetup.min"><code class="name">var <span class="ident">min</span> : float</code></dt>
@@ -5003,7 +5066,7 @@ def max(self) -&gt; float:
 
     :return:
     &#34;&#34;&#34;
-    return float(round(self.visa_ask(f&#39;:max?&#39;))) / 100.0</code></pre>
+    return float(self.visa_ask(f&#39;:max?&#39;)) / 100.0</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.commands.MeasureSetup.phase_source_a"><code class="name">var <span class="ident">phase_source_a</span> : str</code></dt>
@@ -5055,7 +5118,7 @@ def phase_source_b(self) -&gt; str:
 </dd>
 <dt id="Rigol1000z.commands.MeasurementItem"><code class="flex name class">
 <span>class <span class="ident">MeasurementItem</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Measure any waveform parameter of the specified source,
@@ -7028,7 +7091,7 @@ All sources must be given when a query is called (no default args)</p></div>
 </dd>
 <dt id="Rigol1000z.commands.MeasurementStatistic"><code class="flex name class">
 <span>class <span class="ident">MeasurementStatistic</span></span>
-<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: str)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType])</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -7039,9 +7102,9 @@ All sources must be given when a query is called (no default args)</p></div>
 <pre><code class="python">class MeasurementStatistic(Rigol1000zCommandMenu):
     cmd_hierarchy_str = &#34;:meas:stat&#34;
 
-    def __init__(self, visa_resource: _visa.Resource, idn: str):
+    def __init__(self, visa_resource: _visa.Resource, idn: Optional[str]):
         super().__init__(visa_resource, idn)
-        self.item = MeasurementStatisticItem(visa_resource, idn)
+        self.item: MeasurementStatisticItem = MeasurementStatisticItem(visa_resource, idn)
 
     @property
     def enabled(self) -&gt; bool:
@@ -7096,10 +7159,7 @@ All sources must be given when a query is called (no default args)</p></div>
         Clear the history data and make statistic again.
         :return:
         &#34;&#34;&#34;
-        self.visa_write(&#39;:res&#39;)
-
-    def item(self):
-        pass</code></pre>
+        self.visa_write(&#39;:res&#39;)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -7153,19 +7213,6 @@ def mode(self) -&gt; str:
 </dl>
 <h3>Methods</h3>
 <dl>
-<dt id="Rigol1000z.commands.MeasurementStatistic.item"><code class="name flex">
-<span>def <span class="ident">item</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def item(self):
-    pass</code></pre>
-</details>
-</dd>
 <dt id="Rigol1000z.commands.MeasurementStatistic.reset"><code class="name flex">
 <span>def <span class="ident">reset</span></span>(<span>self) ‑> NoneType</span>
 </code></dt>
@@ -7199,7 +7246,7 @@ def mode(self) -&gt; str:
 </dd>
 <dt id="Rigol1000z.commands.MeasurementStatisticItem"><code class="flex name class">
 <span>class <span class="ident">MeasurementStatisticItem</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Enable the statistic function of any waveform parameter of the specified source,
@@ -9266,23 +9313,33 @@ All sources must be given when a query is called (no default args)</p></div>
     &#34;&#34;&#34;
 
     def __init__(self, preamble_str):
+        # print(f&#34;preamble_str: {preamble_str}&#34;)
+
         pre = preamble_str.split(&#39;,&#39;)
 
+        # Meta params
         self.format: int = int(pre[0])
         self.type: int = int(pre[1])
+
+        # Length Params
         self.points: int = int(pre[2])
         self.count: int = int(pre[3])
-        self.x_increment: float = float(pre[4])
+
+        # X params
+        self.x_increment: Decimal = Decimal(pre[4])  # Capture this as a decimal to store more significant digits
         self.x_origin: float = float(pre[5])
-        self.x_reference: float = float(pre[6])
-        self.y_increment: float = float(pre[7])
-        self.y_origin: float = float(pre[8])
-        self.y_reference: float = float(pre[9])</code></pre>
+        self.x_reference: int = int(pre[6])
+        assert self.x_reference == 0  # Should always return 0
+
+        # Y params
+        self.y_increment: str = str(pre[7])  # This should be stored as a string and read as a decimal
+        self.y_origin: int = int(pre[8])
+        self.y_reference: int = int(pre[9])</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.commands.Reference"><code class="flex name class">
 <span>class <span class="ident">Reference</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -9312,7 +9369,7 @@ All sources must be given when a query is called (no default args)</p></div>
 </dd>
 <dt id="Rigol1000z.commands.Source"><code class="flex name class">
 <span>class <span class="ident">Source</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -9342,7 +9399,7 @@ All sources must be given when a query is called (no default args)</p></div>
 </dd>
 <dt id="Rigol1000z.commands.Storage"><code class="flex name class">
 <span>class <span class="ident">Storage</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -9372,7 +9429,7 @@ All sources must be given when a query is called (no default args)</p></div>
 </dd>
 <dt id="Rigol1000z.commands.System"><code class="flex name class">
 <span>class <span class="ident">System</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -9381,13 +9438,36 @@ All sources must be given when a query is called (no default args)</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class System(Rigol1000zCommandMenu):
-    cmd_hierarchy_str = &#34;:syst&#34;</code></pre>
+    cmd_hierarchy_str = &#34;:syst&#34;
+
+    @property
+    def beep_enabled(self) -&gt; bool:
+        return self.visa_ask(f&#34;:BEEP?&#34;) == &#34;1&#34;
+
+    @beep_enabled.setter
+    def beep_enabled(self, val: bool):
+        self.visa_write(f&#34;:BEEP {&#39;1&#39; if val else &#39;0&#39;}&#34;)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu" href="rigol1000zcommandmenu.html#Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu">Rigol1000zCommandMenu</a></li>
 <li><a title="Rigol1000z.rigol1000zcommandmenu.CommandMenu" href="rigol1000zcommandmenu.html#Rigol1000z.rigol1000zcommandmenu.CommandMenu">CommandMenu</a></li>
 </ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="Rigol1000z.commands.System.beep_enabled"><code class="name">var <span class="ident">beep_enabled</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def beep_enabled(self) -&gt; bool:
+    return self.visa_ask(f&#34;:BEEP?&#34;) == &#34;1&#34;</code></pre>
+</details>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu" href="rigol1000zcommandmenu.html#Rigol1000z.rigol1000zcommandmenu.Rigol1000zCommandMenu">Rigol1000zCommandMenu</a></b></code>:
@@ -9418,6 +9498,20 @@ All sources must be given when a query is called (no default args)</p></div>
         self.delay = TimebaseDelay(visa_resource)
 
     @property
+    def scale_options(self) -&gt; Set[float]:
+        &#34;&#34;&#34;
+        YT mode:  5ns/div to 50s/div in 1-2-5 step
+
+        Roll mode(not supported here): 200ms/div to 50s/div in   1-2-5 ste
+
+        :return:
+        &#34;&#34;&#34;
+        return {
+            5 * 10 ** -9,  # Minimum value does not span magnitude order
+            *{v[0] * 10 ** v[1] for v in itertools.product({1, 2, 5}, range(-8, 1, 1))}
+        }
+
+    @property
     def scale(self):
         &#34;&#34;&#34;
         Query the main timebase scale. The default unit is s/div.
@@ -9433,7 +9527,7 @@ All sources must be given when a query is called (no default args)</p></div>
         :param val:
         :return:
         &#34;&#34;&#34;
-        assert 50e-9 &lt;= val &lt;= 50
+        assert 4.99e-9 &lt;= val &lt;= 50.01
         self.visa_write(f&#39;:scal {val:.4e}&#39;)
 
     @property
@@ -9458,15 +9552,15 @@ All sources must be given when a query is called (no default args)</p></div>
         self.visa_write(f&#39;:mode {val}&#39;)
 
     @property
-    def offset(self):
+    def offset(self) -&gt; float:
         &#34;&#34;&#34;
         Query the main timebase offset. The default unit is s.
         :return:
         &#34;&#34;&#34;
-        return self.visa_ask(&#39;:offs?&#39;)
+        return float(self.visa_ask(&#39;:offs?&#39;))
 
     @offset.setter
-    def offset(self, val):
+    def offset(self, val: float):
         &#34;&#34;&#34;
         Set the main timebase offset. The default unit is s.
         :param val:
@@ -9499,7 +9593,7 @@ def mode(self) -&gt; str:
     return self.visa_ask(&#39;:mode?&#39;)</code></pre>
 </details>
 </dd>
-<dt id="Rigol1000z.commands.Timebase.offset"><code class="name">var <span class="ident">offset</span></code></dt>
+<dt id="Rigol1000z.commands.Timebase.offset"><code class="name">var <span class="ident">offset</span> : float</code></dt>
 <dd>
 <div class="desc"><p>Query the main timebase offset. The default unit is s.
 :return:</p></div>
@@ -9508,12 +9602,12 @@ def mode(self) -&gt; str:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def offset(self):
+def offset(self) -&gt; float:
     &#34;&#34;&#34;
     Query the main timebase offset. The default unit is s.
     :return:
     &#34;&#34;&#34;
-    return self.visa_ask(&#39;:offs?&#39;)</code></pre>
+    return float(self.visa_ask(&#39;:offs?&#39;))</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.commands.Timebase.scale"><code class="name">var <span class="ident">scale</span></code></dt>
@@ -9533,6 +9627,32 @@ def scale(self):
     return float(self.visa_ask(&#39;:scal?&#39;))</code></pre>
 </details>
 </dd>
+<dt id="Rigol1000z.commands.Timebase.scale_options"><code class="name">var <span class="ident">scale_options</span> : Set[float]</code></dt>
+<dd>
+<div class="desc"><p>YT mode:
+5ns/div to 50s/div in 1-2-5 step</p>
+<p>Roll mode(not supported here): 200ms/div to 50s/div in
+1-2-5 ste</p>
+<p>:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def scale_options(self) -&gt; Set[float]:
+    &#34;&#34;&#34;
+    YT mode:  5ns/div to 50s/div in 1-2-5 step
+
+    Roll mode(not supported here): 200ms/div to 50s/div in   1-2-5 ste
+
+    :return:
+    &#34;&#34;&#34;
+    return {
+        5 * 10 ** -9,  # Minimum value does not span magnitude order
+        *{v[0] * 10 ** v[1] for v in itertools.product({1, 2, 5}, range(-8, 1, 1))}
+    }</code></pre>
+</details>
+</dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
@@ -9548,7 +9668,7 @@ def scale(self):
 </dd>
 <dt id="Rigol1000z.commands.TimebaseDelay"><code class="flex name class">
 <span>class <span class="ident">TimebaseDelay</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -9651,7 +9771,7 @@ def offset(self) -&gt; float:
 </dd>
 <dt id="Rigol1000z.commands.Trace"><code class="flex name class">
 <span>class <span class="ident">Trace</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -9697,13 +9817,12 @@ def offset(self) -&gt; float:
         self.edge = TriggerEdge(visa_resource)
 
     @property
-    def trigger_holdoff_s(self):
-        return self.visa_ask(&#39;:hold?&#39;)
+    def trigger_holdoff_s(self) -&gt; float:
+        return float(self.visa_ask(&#39;:hold?&#39;))
 
     @trigger_holdoff_s.setter
-    def trigger_holdoff_s(self, holdoff):
-        self.visa_write(&#39;:hold %.3e&#39; % holdoff)
-        return self.get_trigger_holdoff_s()</code></pre>
+    def trigger_holdoff_s(self, holdoff: float):
+        self.visa_write(f&#34;:hold {holdoff:.3e}&#34;)</code></pre>
 </details>
 <h3>Ancestors</h3>
 <ul class="hlist">
@@ -9712,7 +9831,7 @@ def offset(self) -&gt; float:
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="Rigol1000z.commands.Trigger.trigger_holdoff_s"><code class="name">var <span class="ident">trigger_holdoff_s</span></code></dt>
+<dt id="Rigol1000z.commands.Trigger.trigger_holdoff_s"><code class="name">var <span class="ident">trigger_holdoff_s</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -9720,8 +9839,8 @@ def offset(self) -&gt; float:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def trigger_holdoff_s(self):
-    return self.visa_ask(&#39;:hold?&#39;)</code></pre>
+def trigger_holdoff_s(self) -&gt; float:
+    return float(self.visa_ask(&#39;:hold?&#39;))</code></pre>
 </details>
 </dd>
 </dl>
@@ -9739,7 +9858,7 @@ def trigger_holdoff_s(self):
 </dd>
 <dt id="Rigol1000z.commands.TriggerEdge"><code class="flex name class">
 <span>class <span class="ident">TriggerEdge</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Adds additional checks and features exclusive to the Rigol1000z series of scopes</p></div>
@@ -9751,11 +9870,11 @@ def trigger_holdoff_s(self):
     cmd_hierarchy_str = &#34;:trig:edg&#34;
 
     @property
-    def trigger_level_v(self):
-        return self.visa_ask(&#39;:lev?&#39;)
+    def trigger_level_v(self) -&gt; float:
+        return float(self.visa_ask(&#39;:lev?&#39;))
 
     @trigger_level_v.setter
-    def trigger_level_v(self, level):
+    def trigger_level_v(self, level: float):
         self.visa_write(f&#39;:lev {level:.3e}&#39;)</code></pre>
 </details>
 <h3>Ancestors</h3>
@@ -9765,7 +9884,7 @@ def trigger_holdoff_s(self):
 </ul>
 <h3>Instance variables</h3>
 <dl>
-<dt id="Rigol1000z.commands.TriggerEdge.trigger_level_v"><code class="name">var <span class="ident">trigger_level_v</span></code></dt>
+<dt id="Rigol1000z.commands.TriggerEdge.trigger_level_v"><code class="name">var <span class="ident">trigger_level_v</span> : float</code></dt>
 <dd>
 <div class="desc"></div>
 <details class="source">
@@ -9773,8 +9892,8 @@ def trigger_holdoff_s(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def trigger_level_v(self):
-    return self.visa_ask(&#39;:lev?&#39;)</code></pre>
+def trigger_level_v(self) -&gt; float:
+    return float(self.visa_ask(&#39;:lev?&#39;))</code></pre>
 </details>
 </dd>
 </dl>
@@ -9792,7 +9911,7 @@ def trigger_level_v(self):
 </dd>
 <dt id="Rigol1000z.commands.Waveform"><code class="flex name class">
 <span>class <span class="ident">Waveform</span></span>
-<span>(</span><span>visa_resource, idn: str = None)</span>
+<span>(</span><span>visa_resource: pyvisa.resources.resource.Resource, idn: Union[str, NoneType] = '')</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Complete</p></div>
@@ -9854,7 +9973,7 @@ def trigger_level_v(self):
         return float(self.visa_ask(&#39;:xinc?&#39;))
 
     @property
-    def y_increment(self) -&gt; float:
+    def y_increment(self) -&gt; Decimal:
         &#34;&#34;&#34;
         Query the waveform increment of the specified channel source in the Y direction.
         The unit is the same as the current amplitude unit.
@@ -9877,7 +9996,7 @@ def trigger_level_v(self):
 
         :return:
         &#34;&#34;&#34;
-        return float(self.visa_ask(&#39;:yinc?&#39;))
+        return Decimal(self.visa_ask(&#39;:yinc?&#39;))
 
     @property
     def x_origin(self) -&gt; float:
@@ -10176,7 +10295,7 @@ def x_reference(self) -&gt; int:
     return int(self.visa_ask(&#39;:xref?&#39;))</code></pre>
 </details>
 </dd>
-<dt id="Rigol1000z.commands.Waveform.y_increment"><code class="name">var <span class="ident">y_increment</span> : float</code></dt>
+<dt id="Rigol1000z.commands.Waveform.y_increment"><code class="name">var <span class="ident">y_increment</span> : decimal.Decimal</code></dt>
 <dd>
 <div class="desc"><p>Query the waveform increment of the specified channel source in the Y direction.
 The unit is the same as the current amplitude unit.</p>
@@ -10201,7 +10320,7 @@ In MAX mode:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@property
-def y_increment(self) -&gt; float:
+def y_increment(self) -&gt; Decimal:
     &#34;&#34;&#34;
     Query the waveform increment of the specified channel source in the Y direction.
     The unit is the same as the current amplitude unit.
@@ -10224,7 +10343,7 @@ def y_increment(self) -&gt; float:
 
     :return:
     &#34;&#34;&#34;
-    return float(self.visa_ask(&#39;:yinc?&#39;))</code></pre>
+    return Decimal(self.visa_ask(&#39;:yinc?&#39;))</code></pre>
 </details>
 </dd>
 <dt id="Rigol1000z.commands.Waveform.y_origin"><code class="name">var <span class="ident">y_origin</span> : int</code></dt>
@@ -10386,6 +10505,9 @@ def y_reference(self) -&gt; int:
 </li>
 <li>
 <h4><code><a title="Rigol1000z.commands.Function" href="#Rigol1000z.commands.Function">Function</a></code></h4>
+<ul class="">
+<li><code><a title="Rigol1000z.commands.Function.beep_on_record" href="#Rigol1000z.commands.Function.beep_on_record">beep_on_record</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="Rigol1000z.commands.IEEE488" href="#Rigol1000z.commands.IEEE488">IEEE488</a></code></h4>
@@ -10526,7 +10648,6 @@ def y_reference(self) -&gt; int:
 <h4><code><a title="Rigol1000z.commands.MeasurementStatistic" href="#Rigol1000z.commands.MeasurementStatistic">MeasurementStatistic</a></code></h4>
 <ul class="">
 <li><code><a title="Rigol1000z.commands.MeasurementStatistic.enabled" href="#Rigol1000z.commands.MeasurementStatistic.enabled">enabled</a></code></li>
-<li><code><a title="Rigol1000z.commands.MeasurementStatistic.item" href="#Rigol1000z.commands.MeasurementStatistic.item">item</a></code></li>
 <li><code><a title="Rigol1000z.commands.MeasurementStatistic.mode" href="#Rigol1000z.commands.MeasurementStatistic.mode">mode</a></code></li>
 <li><code><a title="Rigol1000z.commands.MeasurementStatistic.reset" href="#Rigol1000z.commands.MeasurementStatistic.reset">reset</a></code></li>
 </ul>
@@ -10624,6 +10745,9 @@ def y_reference(self) -&gt; int:
 </li>
 <li>
 <h4><code><a title="Rigol1000z.commands.System" href="#Rigol1000z.commands.System">System</a></code></h4>
+<ul class="">
+<li><code><a title="Rigol1000z.commands.System.beep_enabled" href="#Rigol1000z.commands.System.beep_enabled">beep_enabled</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="Rigol1000z.commands.Timebase" href="#Rigol1000z.commands.Timebase">Timebase</a></code></h4>
@@ -10631,6 +10755,7 @@ def y_reference(self) -&gt; int:
 <li><code><a title="Rigol1000z.commands.Timebase.mode" href="#Rigol1000z.commands.Timebase.mode">mode</a></code></li>
 <li><code><a title="Rigol1000z.commands.Timebase.offset" href="#Rigol1000z.commands.Timebase.offset">offset</a></code></li>
 <li><code><a title="Rigol1000z.commands.Timebase.scale" href="#Rigol1000z.commands.Timebase.scale">scale</a></code></li>
+<li><code><a title="Rigol1000z.commands.Timebase.scale_options" href="#Rigol1000z.commands.Timebase.scale_options">scale_options</a></code></li>
 </ul>
 </li>
 <li>

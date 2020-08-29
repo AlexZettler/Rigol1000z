@@ -250,7 +250,7 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         # Set transmission format
         self.waveform.read_format = EWaveformReadFormat.Byte
-        print(self.waveform.read_format)
+        #print(self.waveform.read_format)
 
         # todo: wait until data is ready with the new settings
 
@@ -283,12 +283,12 @@ class Rigol1000z(Rigol1000zCommandMenu):
                 last_block_pts: int = info.points % max_num_pts
 
                 print(f"Data being gathered for Ch{c}")
-                print(
-                    f"Block data:\n"
-                    f"    max_num_pts:    {max_num_pts}\n"
-                    f"    num_blocks:     {num_blocks}\n"
-                    f"    last_block_pts: {last_block_pts}\n"
-                )
+                # print(
+                #    f"Block data:\n"
+                #    f"    max_num_pts:    {max_num_pts}\n"
+                #    f"    num_blocks:     {num_blocks}\n"
+                #    f"    last_block_pts: {last_block_pts}\n"
+                # )
 
                 data_blocks: List[_np.ndarray] = []
 
@@ -306,7 +306,7 @@ class Rigol1000z(Rigol1000zCommandMenu):
                             break
                     data = self.visa_ask_raw(':wav:data?', 250000)
 
-                    print(f"RAW DATA RETURNED FROM SCOPE TYPE: {type(data)}")
+                    # print(f"RAW DATA RETURNED FROM SCOPE TYPE: {type(data)}")
 
                     # todo: 10MHz sine wave seems to return one less data point than the preamble indicates.
                     #  I believe this has to do with data that is only one block long not containing an end character.
