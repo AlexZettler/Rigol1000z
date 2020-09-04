@@ -14,7 +14,7 @@ import pyvisa  # type: ignore
 # packages from this library
 from Rigol1000z.commands import *
 from Rigol1000z.sql_integration.sql_commands import db
-from Rigol1000z.waveform_objs import Capture, WaveformWithContext
+from Rigol1000z.waveform_objs import Capture, WaveformChannel
 
 
 class Rigol1000z(Rigol1000zCommandMenu):
@@ -250,7 +250,6 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
         # Set transmission format
         self.waveform.read_format = EWaveformReadFormat.Byte
-        #print(self.waveform.read_format)
 
         # todo: wait until data is ready with the new settings
 
@@ -324,7 +323,7 @@ class Rigol1000z(Rigol1000zCommandMenu):
 
                 capture.add_waveform(
                     str(c),
-                    WaveformWithContext(
+                    WaveformChannel(
                         channel_name=str(c),
                         data=data_array,
                         vertical_offset=y_offset,

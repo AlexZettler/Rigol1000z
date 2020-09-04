@@ -10,6 +10,9 @@ def title_message(title_str: str, title_size: int):
 
 
 if __name__ == '__main__':
+    # for development pdoc server at localhost:8081
+    # pipenv run python -m  pdoc --http localhost:8081 Rigol1000z
+
     str_width = 24
 
     title_message('Starting type checking', str_width)

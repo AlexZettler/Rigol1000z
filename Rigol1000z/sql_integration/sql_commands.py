@@ -1,5 +1,3 @@
-
-
 import sqlite3
 
 import io
@@ -13,6 +11,7 @@ import numpy as np  # type: ignore
 DB_PATH = f"./response_data.db"
 
 # Define table names
+PROJECT_TABLE = "project"
 CAPTURE_TABLE = "capture"
 WAVEFORM_TABLE = "waveform"
 
@@ -30,18 +29,45 @@ class DBInterface:
     def ensure_database_initialized(self):
         c = self.connection.cursor()
 
-        # Create table if first measurement
+        # Create capture table
+        c.execute('''
+        CREATE TABLE IF NOT EXISTS {0}
+        (
+            id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+            name                TEXT,
+            description         TEXT    
+        )
+        '''.format(PROJECT_TABLE))
+
+        # region unique_keys
+
+        c.execute(
+            f'insert or replace into {PROJECT_TABLE} (id, name, description) values (?,?,?)',
+            (-1, "UNASSIGNED_PROJECT",
+             "This is the default project that gets assigned to projects that don't have a project assigned.")
+        )
+
+        c.execute(
+            f'insert or replace into {PROJECT_TABLE} (id, name, description) values (?,?,?)',
+            (-2, "TESTING_PROJECT", "This is the project that captures used in tests should be attached to.")
+        )
+
+        # endregion
+
+        # Create capture table
         c.execute('''
         CREATE TABLE IF NOT EXISTS {0}
         (
             id                  INTEGER PRIMARY KEY AUTOINCREMENT,
             description         TEXT, 
             capture_period      REAL,
-            capture_datetime    TIMESTAMP         
+            capture_datetime    TIMESTAMP,
+            fk_project          INTEGER,
+            FOREIGN KEY(fk_project) REFERENCES {1}(id)
         )
-        '''.format(CAPTURE_TABLE))
+        '''.format(CAPTURE_TABLE, PROJECT_TABLE))
 
-        # Create table if first measurement
+        # Create waveform table
         c.execute('''
         CREATE TABLE IF NOT EXISTS {0}
         (
@@ -61,24 +87,15 @@ class DBInterface:
 
         self.connection.commit()
 
-    def write_capture_to_db(self, capture_period: float, capture_datetime: datetime, capture_description: str = ""):
-        """
-        Basic description of function
-        for more info on numpy function docs read: https://numpydoc.readthedocs.io/en/latest/format.html
+    # region capture read and writes
 
-        Parameters
-        ----------
-         :
-            Description of parameter ''
-         :
-            Description of parameter ''
-
-        Returns
-        -------
-
-            Description of return value
-        """
-
+    def write_capture_to_db(
+            self,
+            capture_period: float,
+            capture_datetime: datetime,
+            capture_description: str = "",
+            part_of_project: int = -1
+    )->int:
         c = self.connection.cursor()
 
         c.execute(
@@ -87,16 +104,18 @@ class DBInterface:
             (
                 description,
                 capture_period,
-                capture_datetime
+                capture_datetime,
+                fk_project
             ) values
-                (?,?,?)
+                (?,?,?,?)
             '''.format(
                 CAPTURE_TABLE
             ),
             (
                 capture_description,
                 capture_period,
-                capture_datetime
+                capture_datetime,
+                part_of_project
             )
         )
         inserted_item = c.lastrowid
@@ -104,6 +123,20 @@ class DBInterface:
 
         return inserted_item
 
+    def get_capture_from_id(self, capture_id: int) -> Tuple[float, str, datetime]:
+        c = self.connection.cursor()
+
+        c.execute(
+            f"select "
+            f"capture_period, description, capture_datetime "
+            f"from {CAPTURE_TABLE} "
+            f"where id=?",
+            (capture_id,)
+        )
+        return c.fetchone()
+
+    # endregion
+    # region waveform read and writes
     def write_waveform_to_db(
             self,
             measurement_fk: int,
@@ -113,23 +146,6 @@ class DBInterface:
             vertical_scale: str,
             description: str
     ):
-        """
-        Basic description of function
-        for more info on numpy function docs read: https://numpydoc.readthedocs.io/en/latest/format.html
-
-        Parameters
-        ----------
-         :
-            Description of parameter ''
-         :
-            Description of parameter ''
-
-        Returns
-        -------
-
-            Description of return value
-        """
-
         c = self.connection.cursor()
 
         c.execute(
@@ -157,19 +173,19 @@ class DBInterface:
 
         return inserted_item
 
-    def get_capture_from_id(self, capture_id: int) -> Tuple[float, str, datetime]:
+    def get_waveform_from_id(self, waveform_id: int) -> Tuple[str, int, str, str, bytes]:
         c = self.connection.cursor()
 
         c.execute(
             f"select "
-            f"capture_period, description, capture_datetime "
-            f"from {CAPTURE_TABLE} "
+            f"channel_name, vertical_offset, vertical_scale, description, wf "
+            f"from {WAVEFORM_TABLE} "
             f"where id=?",
-            (capture_id,)
+            (waveform_id,)
         )
         return c.fetchone()
 
-    def get_waveforms_from_capture(self, capture_id: int) -> List[Tuple[int, str, int, str, str, bytes]]:
+    def get_waveforms_from_capture_id(self, capture_id: int) -> List[Tuple[int, str, int, str, str, bytes]]:
         c = self.connection.cursor()
 
         c.execute(
@@ -183,8 +199,7 @@ class DBInterface:
         )
         return c.fetchall()
 
-    def get_all_captures_with_description(self):
-        pass
+    # endregion
 
 
 # def get_all_freq_inps() -> Set[str]:

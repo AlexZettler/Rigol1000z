@@ -1,5 +1,5 @@
 import unittest
-from Rigol1000z import Rigol1000z, Capture, WaveformWithContext, db
+from Rigol1000z import Rigol1000z, Capture, WaveformChannel, db
 from Rigol1000z.commands import Channel
 
 
@@ -47,3 +47,5 @@ class ChannelTest(ScopeTest):
         test_ch.enabled = desired_val  # Invert state
 
         self.assertEqual(test_ch.enabled, desired_val)  # check that the bool state was changed correctly
+
+
